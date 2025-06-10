@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
+import { HelmetProvider } from 'react-helmet-async';
 import './App.css';
 
 // Layout components
@@ -16,37 +17,47 @@ import WorkspacePage from './components/pages/WorkspacePage';
 import SettingsPage from './components/pages/SettingsPage';
 import PricingPage from './components/pages/PricingPage';
 import AuthPage from './components/pages/AuthPage';
+import PrivacyPolicy from './components/pages/PrivacyPolicy';
+import CookiePolicy from './components/pages/CookiePolicy';
 
 // Context providers
 import { AuthProvider } from './hooks/useAuth';
 import { SubscriptionProvider } from './hooks/useSubscription';
 
+// GDPR Compliance
+import ScholarAICookieConsent from './components/CookieConsent';
+
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <AuthProvider>
-        <SubscriptionProvider>
-          <Router>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/pricing" element={<PricingPage />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/research" element={<ResearchPage />} />
-                  <Route path="/citations" element={<CitationsPage />} />
-                  <Route path="/workspace/:id?" element={<WorkspacePage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                </Routes>
-              </main>
-              <Footer />
-            </div>
-          </Router>
-        </SubscriptionProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <AuthProvider>
+          <SubscriptionProvider>
+            <Router>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/research" element={<ResearchPage />} />
+                    <Route path="/citations" element={<CitationsPage />} />
+                    <Route path="/workspace/:id?" element={<WorkspacePage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/cookie-policy" element={<CookiePolicy />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <ScholarAICookieConsent />
+              </div>
+            </Router>
+          </SubscriptionProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }
 
