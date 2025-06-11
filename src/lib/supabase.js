@@ -8,6 +8,16 @@ const isDevelopmentMode = import.meta.env.VITE_APP_ENV === 'development' &&
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xicjnnzzykdhbmrpafhs.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
 
+// Get the correct base URL for redirects
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // In browser, use current origin
+    return window.location.origin;
+  }
+  // Fallback for SSR
+  return import.meta.env.VITE_APP_URL || 'https://www.scholarai.eu';
+};
+
 // Create mock Supabase client for development
 const createMockSupabaseClient = () => {
   console.log('🧪 Using Mock Supabase Client for Development');
@@ -161,7 +171,7 @@ export const auth = {
           password,
           options: {
             data: options,
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            emailRedirectTo: `${getBaseUrl()}/auth/callback`
           }
         });
       }
@@ -170,7 +180,7 @@ export const auth = {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${getBaseUrl()}/auth/callback`,
           ...options
         }
       })
@@ -212,7 +222,7 @@ export const auth = {
   resetPassword: async (email) => {
     try {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`
+        redirectTo: `${getBaseUrl()}/auth/reset-password`
       })
       return { data, error }
     } catch (error) {
