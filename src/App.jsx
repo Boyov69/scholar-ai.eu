@@ -12,6 +12,7 @@ import Footer from './components/layout/Footer';
 import LandingPage from './components/pages/LandingPage';
 import Dashboard from './components/pages/Dashboard';
 import ResearchPage from './components/pages/ResearchPage';
+import EnhancedResearchPage from './components/pages/EnhancedResearchPage';
 import CitationsPage from './components/pages/CitationsPage';
 import WorkspacePage from './components/pages/WorkspacePage';
 import SettingsPage from './components/pages/SettingsPage';
@@ -26,6 +27,10 @@ import { SubscriptionProvider } from './hooks/useSubscription';
 
 // GDPR Compliance
 import ScholarAICookieConsent from './components/CookieConsent';
+
+// Development tools
+import DevModeNotice from './components/DevModeNotice';
+import DevLoginButton from './components/DevLoginButton';
 
 function App() {
   return (
@@ -43,6 +48,7 @@ function App() {
                     <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/research" element={<ResearchPage />} />
+                    <Route path="/research/enhanced" element={<EnhancedResearchPage />} />
                     <Route path="/citations" element={<CitationsPage />} />
                     <Route path="/workspace/:id?" element={<WorkspacePage />} />
                     <Route path="/settings" element={<SettingsPage />} />
@@ -52,6 +58,8 @@ function App() {
                 </main>
                 <Footer />
                 <ScholarAICookieConsent />
+                <DevModeNotice />
+                <DevLoginButton />
               </div>
             </Router>
           </SubscriptionProvider>

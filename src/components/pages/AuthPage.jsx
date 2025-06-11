@@ -110,10 +110,16 @@ const AuthPage = () => {
           navigate('/dashboard?welcome=true');
         }
       } else if (mode === 'signin') {
-        const { error } = await signIn(formData.email, formData.password);
-        
-        if (!error) {
+        console.log('🧪 Attempting sign in with:', formData.email);
+        const { data, error } = await signIn(formData.email, formData.password);
+
+        console.log('🧪 Sign in result:', { data, error });
+
+        if (!error && data) {
+          console.log('🧪 Sign in successful, redirecting to dashboard');
           navigate('/dashboard');
+        } else {
+          console.error('🧪 Sign in failed:', error);
         }
       } else if (mode === 'reset') {
         const { error } = await resetPassword(formData.email);
@@ -257,8 +263,8 @@ const AuthPage = () => {
                         </Button>
                       </div>
 
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full ice-gradient hover:opacity-90"
                         disabled={loading}
                       >
@@ -269,6 +275,47 @@ const AuthPage = () => {
                         )}
                         Sign In
                       </Button>
+
+                      {/* Development Mode Quick Login */}
+                      {import.meta.env.VITE_APP_ENV === 'development' && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <p className="text-xs text-muted-foreground text-center mb-3">
+                            🧪 Development Mode - Quick Login
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  email: 'student@localhost.dev',
+                                  password: 'test123'
+                                }));
+                              }}
+                              className="text-xs"
+                            >
+                              Student
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  email: 'researcher@localhost.dev',
+                                  password: 'test123'
+                                }));
+                              }}
+                              className="text-xs"
+                            >
+                              Researcher
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </TabsContent>
 
                     <TabsContent value="signup" className="space-y-4 mt-0">

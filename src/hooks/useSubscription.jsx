@@ -58,7 +58,7 @@ export const SubscriptionProvider = ({ children }) => {
     };
   };
 
-  const subscribe = async (tierId) => {
+  const subscribe = async (tierId, billingCycle = 'monthly') => {
     try {
       setLoading(true);
       setError(null);
@@ -68,12 +68,18 @@ export const SubscriptionProvider = ({ children }) => {
         throw new Error('Invalid subscription tier');
       }
 
+      // Get the correct price ID based on billing cycle
+      const priceId = tier.stripePriceId[billingCycle];
+      if (!priceId) {
+        throw new Error(`Invalid billing cycle: ${billingCycle}`);
+      }
+
       // Create Stripe checkout session
-      const successUrl = `${window.location.origin}/dashboard?subscription=success`;
+      const successUrl = `${window.location.origin}/dashboard?subscription=success&tier=${tierId}`;
       const cancelUrl = `${window.location.origin}/pricing?subscription=cancelled`;
 
       await stripe.createCheckoutSession(
-        tier.stripePriceId, // You'll need to add this to your config
+        priceId,
         user.id,
         successUrl,
         cancelUrl
