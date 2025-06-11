@@ -1,36 +1,171 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Check if we're in development mode with mocking enabled
+const isDevelopmentMode = import.meta.env.VITE_APP_ENV === 'development' &&
+                         import.meta.env.VITE_MOCK_PAYMENTS === 'true';
+
 // Production Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xicjnnzzykdhbmrpafhs.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
 
-// Create Supabase client with security options
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'scholar-ai-web'
+// Create mock Supabase client for development
+const createMockSupabaseClient = () => {
+  console.log('🧪 Using Mock Supabase Client for Development');
+
+  return {
+    auth: {
+      signUp: async ({ email, password, options }) => {
+        console.log('🧪 Mock SignUp:', { email, password });
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const mockUser = {
+          id: 'mock-user-' + Date.now(),
+          email: email,
+          user_metadata: options?.data || { full_name: 'Test User' },
+          created_at: new Date().toISOString()
+        };
+
+        return {
+          data: {
+            user: mockUser,
+            session: {
+              access_token: 'mock-access-token',
+              refresh_token: 'mock-refresh-token',
+              expires_in: 3600,
+              user: mockUser
+            }
+          },
+          error: null
+        };
+      },
+
+      signInWithPassword: async ({ email, password }) => {
+        console.log('🧪 Mock SignIn:', { email, password });
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Import mock users dynamically
+        const { getMockUser } = await import('./mockUsers.js');
+        const mockUserData = getMockUser(email);
+
+        const mockUser = mockUserData || {
+          id: 'mock-user-' + Date.now(),
+          email: email,
+          user_metadata: {
+            full_name: email.includes('admin') ? 'Admin User' :
+                      email.includes('professor') ? 'Prof. Test User' :
+                      email.includes('researcher') ? 'Dr. Test Researcher' : 'Test Student'
+          }
+        };
+
+        return {
+          data: {
+            user: mockUser,
+            session: {
+              access_token: 'mock-access-token',
+              refresh_token: 'mock-refresh-token',
+              expires_in: 3600,
+              user: mockUser
+            }
+          },
+          error: null
+        };
+      },
+
+      signOut: async () => {
+        console.log('🧪 Mock SignOut');
+        return { error: null };
+      },
+
+      getSession: async () => {
+        return { data: { session: null }, error: null };
+      },
+
+      getUser: async () => {
+        return { data: { user: null }, error: null };
+      },
+
+      onAuthStateChange: (callback) => {
+        console.log('🧪 Mock Auth State Change Listener');
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      },
+
+      resetPasswordForEmail: async (email) => {
+        console.log('🧪 Mock Reset Password:', email);
+        return { data: {}, error: null };
+      }
+    },
+
+    from: (table) => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => ({ data: null, error: null }),
+          limit: () => ({ data: [], error: null }),
+          order: () => ({ data: [], error: null })
+        }),
+        limit: () => ({ data: [], error: null }),
+        order: () => ({ data: [], error: null })
+      }),
+      insert: async (data) => {
+        console.log(`🧪 Mock DB Insert into ${table}:`, data);
+        return { data: Array.isArray(data) ? data : [data], error: null };
+      },
+      update: async (data) => {
+        console.log(`🧪 Mock DB Update in ${table}:`, data);
+        return { data: data, error: null };
+      },
+      delete: async () => {
+        console.log(`🧪 Mock DB Delete from ${table}`);
+        return { error: null };
+      }
+    }),
+
+    channel: () => ({
+      on: () => ({ subscribe: () => {} })
+    })
+  };
+};
+
+// Create Supabase client with security options or mock client
+export const supabase = isDevelopmentMode ?
+  createMockSupabaseClient() :
+  createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'scholar-ai-web'
+      }
+    },
+    db: {
+      schema: 'public'
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      }
     }
-  },
-  db: {
-    schema: 'public'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  }
-})
+  });
 
 // Authentication helpers
 export const auth = {
   signUp: async (email, password, options = {}) => {
     try {
+      if (isDevelopmentMode) {
+        console.log('🧪 Mock Auth SignUp');
+        return await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: options,
+            emailRedirectTo: `${window.location.origin}/auth/callback`
+          }
+        });
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -48,6 +183,11 @@ export const auth = {
 
   signIn: async (email, password) => {
     try {
+      if (isDevelopmentMode) {
+        console.log('🧪 Mock Auth SignIn');
+        return await supabase.auth.signInWithPassword({ email, password });
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password

@@ -182,9 +182,19 @@ const Dashboard = () => {
     return 'text-green-400';
   };
 
+  // Quick actions - Enhanced Research is visible to all but access-controlled
   const quickActions = [
     {
-      title: 'New Research Query',
+      title: 'Enhanced Research',
+      description: 'Multi-agent AI research with FutureHouse',
+      icon: Brain,
+      action: () => navigate('/research/enhanced'), // Access control handled in the route
+      color: 'bg-gradient-to-r from-blue-500 to-purple-500 text-white',
+      badge: 'NEW',
+      premium: tier !== 'ultra_intelligent' && tier !== 'phd_level' // Show as premium for non-eligible tiers
+    },
+    {
+      title: 'Standard Research',
       description: 'Start a new AI-powered research',
       icon: Brain,
       action: () => navigate('/research'),
@@ -662,16 +672,34 @@ const Dashboard = () => {
                       <Button
                         key={index}
                         variant="outline"
-                        className="w-full justify-start border-primary/30 hover:bg-muted/50"
+                        className={`w-full justify-start border-primary/30 hover:bg-muted/50 relative ${
+                          action.badge ? 'border-blue-500/50' : ''
+                        } ${action.premium ? 'opacity-90' : ''}`}
                         onClick={action.action}
                       >
                         <div className={`p-2 rounded-lg mr-3 ${action.color}`}>
                           <IconComponent className="h-4 w-4" />
                         </div>
-                        <div className="text-left">
-                          <p className="font-medium">{action.title}</p>
-                          <p className="text-xs text-muted-foreground">{action.description}</p>
+                        <div className="text-left flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{action.title}</p>
+                            {action.badge && (
+                              <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-0.5">
+                                {action.badge}
+                              </Badge>
+                            )}
+                            {action.premium && (
+                              <Badge variant="outline" className="border-yellow-400/50 text-yellow-400 text-xs px-2 py-0.5">
+                                Premium
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {action.description}
+                            {action.premium && ' (Ultra-Intelligent & PhD-Level)'}
+                          </p>
                         </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     );
                   })}

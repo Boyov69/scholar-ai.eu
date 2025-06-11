@@ -50,6 +50,10 @@ export const config = {
       name: 'Advanced AI-Powered Research Platform',
       monthlyPrice: 29,
       yearlyPrice: 24, // €24/month when billed yearly
+      stripePriceId: {
+        monthly: 'price_advanced_ai_monthly',
+        yearly: 'price_advanced_ai_yearly'
+      },
       limits: {
         researchQueries: 50,
         collaborators: 2,
@@ -69,6 +73,10 @@ export const config = {
       name: 'Ultra-Intelligent Academic Platform',
       monthlyPrice: 99,
       yearlyPrice: 79, // €79/month when billed yearly
+      stripePriceId: {
+        monthly: 'price_ultra_intelligent_monthly',
+        yearly: 'price_ultra_intelligent_yearly'
+      },
       limits: {
         researchQueries: -1, // Unlimited
         collaborators: 10,
@@ -90,6 +98,10 @@ export const config = {
       name: 'PhD-Level Academic Intelligence',
       monthlyPrice: 299,
       yearlyPrice: 249, // €249/month when billed yearly
+      stripePriceId: {
+        monthly: 'price_phd_level_monthly',
+        yearly: 'price_phd_level_yearly'
+      },
       limits: {
         researchQueries: -1, // Unlimited
         collaborators: -1, // Unlimited

@@ -171,57 +171,121 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 overflow-hidden">
-        <div className="absolute inset-0 ice-gradient opacity-10"></div>
+      <section className="relative py-24 px-4 overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
+
+        {/* Animated Background Particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-pulse"></div>
+          <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-purple-400/40 rounded-full animate-ping"></div>
+          <div className="absolute top-1/2 left-3/4 w-1.5 h-1.5 bg-cyan-400/30 rounded-full animate-pulse delay-1000"></div>
+        </div>
+
         <div className="container mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto"
+            className="max-w-5xl mx-auto"
           >
-            <Badge variant="outline" className="mb-6 ice-gradient text-white border-primary/30">
-              <Zap className="h-3 w-3 mr-1" />
-              Powered by Advanced AI
-            </Badge>
-            
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 ice-gradient-text">
-              Europe's Premier Academic Research Platform
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto">
-              Accelerate your research with AI-powered literature analysis, automatic citation management, 
-              and real-time collaboration tools designed for European universities.
-            </p>
+            {/* Top Badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <Badge variant="outline" className="mb-8 bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 border-blue-500/30 backdrop-blur-sm">
+                <Brain className="h-3 w-3 mr-2" />
+                Powered by Advanced AI Research Agents
+              </Badge>
+            </motion.div>
 
-            <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto">
-              From Advanced AI capabilities to PhD-Level Intelligence - choose the research power that matches your academic journey. 
-              Trusted by 50K+ researchers across 500+ European institutions.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <Button 
-                size="lg" 
-                className="ice-gradient hover:opacity-90 transition-opacity text-lg px-8 py-6"
+            {/* Main Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-tight"
+            >
+              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                The Future of
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
+                Academic Research
+              </span>
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-xl md:text-2xl text-slate-300 mb-8 max-w-4xl mx-auto leading-relaxed"
+            >
+              Powered by <span className="text-blue-400 font-semibold">PaperQA2 AI agents</span>, Scholar-AI revolutionizes how researchers discover, analyze,
+              and cite academic literature with <span className="text-purple-400 font-semibold">superhuman accuracy</span>.
+            </motion.p>
+
+            {/* Feature Pills */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="flex flex-wrap justify-center gap-4 mb-12"
+            >
+              <div className="flex items-center gap-2 bg-blue-500/10 backdrop-blur-sm border border-blue-500/20 rounded-full px-4 py-2">
+                <Brain className="h-4 w-4 text-blue-400" />
+                <span className="text-blue-300 text-sm font-medium">AI Research Agents</span>
+              </div>
+              <div className="flex items-center gap-2 bg-purple-500/10 backdrop-blur-sm border border-purple-500/20 rounded-full px-4 py-2">
+                <BookOpen className="h-4 w-4 text-purple-400" />
+                <span className="text-purple-300 text-sm font-medium">Smart Citations</span>
+              </div>
+              <div className="flex items-center gap-2 bg-cyan-500/10 backdrop-blur-sm border border-cyan-500/20 rounded-full px-4 py-2">
+                <Users className="h-4 w-4 text-cyan-400" />
+                <span className="text-cyan-300 text-sm font-medium">Real-time Collaboration</span>
+              </div>
+            </motion.div>
+
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
+            >
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 text-lg px-8 py-6 shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-105"
                 onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth?mode=signup')}
               >
-                {isAuthenticated ? 'Go to Dashboard' : 'Start Free Trial'}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <Zap className="mr-2 h-5 w-5" />
+                {isAuthenticated ? 'Go to Dashboard' : 'Start Research Now'}
               </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="border-primary/30 text-lg px-8 py-6"
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-slate-600 text-slate-300 hover:bg-slate-800/50 hover:text-white text-lg px-8 py-6 backdrop-blur-sm transition-all duration-300"
                 onClick={() => navigate('/pricing')}
               >
                 View Intelligence Levels
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </div>
+            </motion.div>
 
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+            {/* Trust Indicators */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="flex flex-wrap justify-center gap-8 text-sm text-slate-400"
+            >
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-400" />
+                <Shield className="h-4 w-4 text-green-400" />
                 <span>GDPR Compliant</span>
               </div>
               <div className="flex items-center gap-2">
@@ -229,16 +293,20 @@ const LandingPage = () => {
                 <span>99.9% Uptime</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-400" />
+                <Star className="h-4 w-4 text-yellow-400 fill-current" />
                 <span>4.9/5 Rating</span>
               </div>
-            </div>
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-blue-400" />
+                <span>500+ Universities</span>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 px-4">
+      <section className="py-20 px-4 bg-gradient-to-r from-slate-900/50 to-slate-800/50">
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -249,10 +317,10 @@ const LandingPage = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold ice-gradient-text mb-2">
+                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
                   {stat.value}
                 </div>
-                <div className="text-muted-foreground">
+                <div className="text-slate-400 font-medium">
                   {stat.label}
                 </div>
               </motion.div>
@@ -270,7 +338,7 @@ const LandingPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 ice-gradient-text">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
               Advanced Research Capabilities
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">

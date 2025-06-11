@@ -22,9 +22,13 @@ export const stripe = {
   // Create checkout session for subscription
   async createCheckoutSession(priceId, userId, successUrl, cancelUrl) {
     try {
-      // TODO: Implement actual API endpoint
-      console.warn('Stripe checkout API endpoint not yet implemented.');
-      throw new Error('Payment processing is not yet available. Please check back later.');
+      // Import API client dynamically to avoid circular imports
+      const { api } = await import('./api.js');
+
+      const { sessionUrl } = await api.createCheckoutSession(priceId, successUrl, cancelUrl);
+
+      // Redirect to Stripe Checkout
+      window.location.href = sessionUrl;
     } catch (error) {
       console.error('Stripe checkout error:', error);
       throw error;
@@ -34,9 +38,13 @@ export const stripe = {
   // Create customer portal session
   async createPortalSession(customerId, returnUrl) {
     try {
-      // TODO: Implement actual API endpoint
-      console.warn('Stripe portal API endpoint not yet implemented.');
-      throw new Error('Customer portal is not yet available. Please check back later.');
+      // Import API client dynamically to avoid circular imports
+      const { api } = await import('./api.js');
+
+      const { portalUrl } = await api.createPortalSession(returnUrl);
+
+      // Redirect to Stripe Customer Portal
+      window.location.href = portalUrl;
     } catch (error) {
       console.error('Stripe portal error:', error);
       throw error;
@@ -46,17 +54,21 @@ export const stripe = {
   // Get subscription status
   async getSubscriptionStatus(userId) {
     try {
-      // TODO: Implement actual API endpoint
-      // For now, return mock data to prevent errors
-      console.warn('Stripe API endpoint not yet implemented. Using mock data.');
-      return {
-        status: 'inactive',
-        tier: 'student',
-        customerId: null
-      };
+      // Import API client dynamically to avoid circular imports
+      const { api } = await import('./api.js');
+
+      return await api.getSubscriptionStatus();
     } catch (error) {
       console.error('Error fetching subscription status:', error);
-      return { status: 'inactive', tier: null };
+      return {
+        status: 'inactive',
+        tier: 'free',
+        customerId: null,
+        subscriptionId: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false
+      };
     }
   }
 };

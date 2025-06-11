@@ -38,9 +38,27 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🧪 Auth state change:', event, session?.user?.email);
+
         if (session?.user) {
           setUser(session.user);
-          await loadUserProfile(session.user.id);
+          try {
+            await loadUserProfile(session.user.id);
+          } catch (profileError) {
+            // Create mock profile for development
+            if (import.meta.env.VITE_APP_ENV === 'development') {
+              const mockProfile = {
+                id: session.user.id,
+                user_id: session.user.id,
+                email: session.user.email,
+                full_name: session.user.user_metadata?.full_name || 'Test User',
+                role: session.user.user_metadata?.role || 'student',
+                subscription_tier: 'free',
+                subscription_status: 'active'
+              };
+              setProfile(mockProfile);
+            }
+          }
         } else {
           setUser(null);
           setProfile(null);
@@ -103,10 +121,36 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const { data, error } = await auth.signIn(email, password);
       if (error) throw error;
-      
+
+      // Set user state immediately after successful login
+      if (data?.user) {
+        setUser(data.user);
+
+        // Load or create user profile
+        try {
+          await loadUserProfile(data.user.id);
+        } catch (profileError) {
+          // If profile doesn't exist, create a mock one for development
+          if (import.meta.env.VITE_APP_ENV === 'development') {
+            const mockProfile = {
+              id: data.user.id,
+              user_id: data.user.id,
+              email: data.user.email,
+              full_name: data.user.user_metadata?.full_name || 'Test User',
+              role: data.user.user_metadata?.role || 'student',
+              institution: data.user.user_metadata?.institution || 'Test University',
+              department: data.user.user_metadata?.department || 'Computer Science',
+              subscription_tier: 'free',
+              subscription_status: 'active'
+            };
+            setProfile(mockProfile);
+          }
+        }
+      }
+
       return { data, error: null };
     } catch (err) {
       setError(err.message);

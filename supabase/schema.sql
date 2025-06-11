@@ -13,6 +13,15 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
     research_interests TEXT[],
     bio TEXT,
     avatar_url TEXT,
+    -- Subscription fields
+    subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'advanced_ai', 'ultra_intelligent', 'phd_level')),
+    subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('inactive', 'active', 'past_due', 'canceled', 'unpaid', 'trialing')),
+    stripe_customer_id TEXT UNIQUE,
+    stripe_subscription_id TEXT UNIQUE,
+    current_period_start TIMESTAMP WITH TIME ZONE,
+    current_period_end TIMESTAMP WITH TIME ZONE,
+    cancel_at_period_end BOOLEAN DEFAULT FALSE,
+    trial_end TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -94,6 +103,36 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Create payment_history table
+CREATE TABLE IF NOT EXISTS public.payment_history (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    stripe_invoice_id TEXT UNIQUE,
+    stripe_payment_intent_id TEXT,
+    amount INTEGER NOT NULL, -- Amount in cents
+    currency TEXT DEFAULT 'eur',
+    status TEXT NOT NULL CHECK (status IN ('succeeded', 'failed', 'pending', 'canceled')),
+    description TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Create usage_tracking table
+CREATE TABLE IF NOT EXISTS public.usage_tracking (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    period_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+    queries_used INTEGER DEFAULT 0,
+    collaborators_count INTEGER DEFAULT 0,
+    storage_used_mb INTEGER DEFAULT 0,
+    workspaces_count INTEGER DEFAULT 0,
+    citations_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    UNIQUE(user_id, period_start)
+);
+
 -- Create RLS (Row Level Security) policies
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
@@ -102,6 +141,8 @@ ALTER TABLE public.research_queries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.citations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workspace_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
 
 -- User profiles policies
 CREATE POLICY "Users can view their own profile" ON public.user_profiles
@@ -163,6 +204,20 @@ CREATE POLICY "Users can view their own notifications" ON public.notifications
 CREATE POLICY "Users can update their own notifications" ON public.notifications
     FOR UPDATE USING (auth.uid() = user_id);
 
+-- Payment history policies
+CREATE POLICY "Users can view their own payment history" ON public.payment_history
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Usage tracking policies
+CREATE POLICY "Users can view their own usage" ON public.usage_tracking
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "System can insert usage data" ON public.usage_tracking
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "System can update usage data" ON public.usage_tracking
+    FOR UPDATE USING (true);
+
 -- Create functions and triggers
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -207,3 +262,9 @@ CREATE INDEX idx_citations_user_id ON public.citations(user_id);
 CREATE INDEX idx_citations_workspace_id ON public.citations(workspace_id);
 CREATE INDEX idx_notifications_user_id ON public.notifications(user_id);
 CREATE INDEX idx_notifications_read ON public.notifications(read);
+CREATE INDEX idx_user_profiles_stripe_customer_id ON public.user_profiles(stripe_customer_id);
+CREATE INDEX idx_user_profiles_subscription_status ON public.user_profiles(subscription_status);
+CREATE INDEX idx_payment_history_user_id ON public.payment_history(user_id);
+CREATE INDEX idx_payment_history_status ON public.payment_history(status);
+CREATE INDEX idx_usage_tracking_user_id ON public.usage_tracking(user_id);
+CREATE INDEX idx_usage_tracking_period ON public.usage_tracking(period_start, period_end);

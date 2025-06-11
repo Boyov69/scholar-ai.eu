@@ -1,20 +1,34 @@
-# Stripe Setup Guide for Scholar AI
+# 💳 Complete Stripe Setup Guide for Scholar AI
 
-This guide will help you configure Stripe for your Scholar AI application to enable payment processing.
+This comprehensive guide will help you configure Stripe for your Scholar AI application to enable payment processing.
 
-## Prerequisites
+## 🎯 Prerequisites
 
 1. A Stripe account (sign up at https://stripe.com if you don't have one)
 2. Access to your Stripe Dashboard
+3. Deployed Supabase Edge Functions
+4. Vercel deployment ready
 
-## Step 1: Get Your Stripe API Keys
+## 📋 Quick Setup Checklist
+
+- [ ] Get Stripe API keys
+- [ ] Create subscription products
+- [ ] Set up webhook endpoints
+- [ ] Configure environment variables
+- [ ] Test payment flows
+- [ ] Go live!
+
+## 🔑 Step 1: Get Your Stripe API Keys
 
 1. Log in to your [Stripe Dashboard](https://dashboard.stripe.com)
 2. Make sure you're in **Test Mode** (toggle in the top right)
 3. Go to **Developers** → **API keys**
 4. Copy your keys:
-   - **Publishable key**: Starts with `pk_test_`
+   - **Publishable key**: Starts with `pk_test_` (safe for frontend)
    - **Secret key**: Starts with `sk_test_` (keep this secure!)
+
+### 🔒 Security Note
+Never expose your secret key in frontend code! It should only be used in server-side functions.
 
 ## Step 2: Update Your Environment Variables
 

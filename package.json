@@ -14,7 +14,17 @@
     "start": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "deploy": "npm run build && vercel --prod"
+    "localhost": "scripts\\start-simple.bat",
+    "localhost:full": "scripts\\start-localhost.bat",
+    "localhost:fresh": "powershell -ExecutionPolicy Bypass -File scripts/start-localhost.ps1 -Fresh",
+    "localhost:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-localhost.ps1",
+    "localhost:status": "node scripts/check-localhost.js",
+    "test:data": "node scripts/create-test-data.js",
+    "test:payments": "node scripts/test-payment-flow.js",
+    "setup:stripe": "node scripts/setup-stripe-products.js",
+    "deploy": "npm run build && vercel --prod",
+    "deploy:complete": "powershell -ExecutionPolicy Bypass -File scripts/deploy-complete.ps1",
+    "deploy:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy-complete.ps1 -Production"
   },
   "dependencies": {
     "@axe-core/react": "^4.10.2",
