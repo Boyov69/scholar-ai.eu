@@ -65,53 +65,65 @@ const Header = () => {
           {/* Navigation */}
           {isAuthenticated && (
             <nav className="hidden md:flex items-center space-x-6">
-              <Link 
-                to="/dashboard" 
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActivePath('/dashboard') 
-                    ? 'bg-primary/20 text-primary' 
+              <button
+                onClick={() => {
+                  console.log('Desktop nav: Dashboard clicked');
+                  navigate('/dashboard');
+                }}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                  isActivePath('/dashboard')
+                    ? 'bg-primary/20 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
                 <Search className="h-4 w-4" />
                 <span>Dashboard</span>
-              </Link>
-              
-              <Link 
-                to="/research" 
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActivePath('/research') 
-                    ? 'bg-primary/20 text-primary' 
+              </button>
+
+              <button
+                onClick={() => {
+                  console.log('Desktop nav: Research clicked');
+                  navigate('/research');
+                }}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                  isActivePath('/research')
+                    ? 'bg-primary/20 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
                 <BookOpen className="h-4 w-4" />
                 <span>Research</span>
-              </Link>
-              
-              <Link 
-                to="/citations" 
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActivePath('/citations') 
-                    ? 'bg-primary/20 text-primary' 
+              </button>
+
+              <button
+                onClick={() => {
+                  console.log('Desktop nav: Citations clicked');
+                  navigate('/citations');
+                }}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                  isActivePath('/citations')
+                    ? 'bg-primary/20 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
                 <BookOpen className="h-4 w-4" />
                 <span>Citations</span>
-              </Link>
-              
-              <Link 
-                to="/workspace" 
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActivePath('/workspace') 
-                    ? 'bg-primary/20 text-primary' 
+              </button>
+
+              <button
+                onClick={() => {
+                  console.log('Desktop nav: Workspace clicked');
+                  navigate('/workspace');
+                }}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                  isActivePath('/workspace')
+                    ? 'bg-primary/20 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
                 <Users className="h-4 w-4" />
                 <span>Workspace</span>
-              </Link>
+              </button>
             </nav>
           )}
 
@@ -227,32 +239,44 @@ const Header = () => {
                       className="w-48 glass-strong border-border/50" 
                       align="end"
                     >
-                      <DropdownMenuItem 
-                        onClick={() => navigate('/dashboard')}
+                      <DropdownMenuItem
+                        onClick={() => {
+                          console.log('Mobile nav: Dashboard clicked');
+                          navigate('/dashboard');
+                        }}
                         className="cursor-pointer"
                       >
                         <Search className="mr-2 h-4 w-4" />
                         <span>Dashboard</span>
                       </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={() => navigate('/research')}
+
+                      <DropdownMenuItem
+                        onClick={() => {
+                          console.log('Mobile nav: Research clicked');
+                          navigate('/research');
+                        }}
                         className="cursor-pointer"
                       >
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>Research</span>
                       </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={() => navigate('/citations')}
+
+                      <DropdownMenuItem
+                        onClick={() => {
+                          console.log('Mobile nav: Citations clicked');
+                          navigate('/citations');
+                        }}
                         className="cursor-pointer"
                       >
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>Citations</span>
                       </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={() => navigate('/workspace')}
+
+                      <DropdownMenuItem
+                        onClick={() => {
+                          console.log('Mobile nav: Workspace clicked');
+                          navigate('/workspace');
+                        }}
                         className="cursor-pointer"
                       >
                         <Users className="mr-2 h-4 w-4" />

@@ -263,13 +263,28 @@ const ResearchPage = () => {
                 Harness the power of multiple AI agents for comprehensive academic research
               </p>
             </div>
-            
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground mb-1">
-                Queries Remaining
-              </div>
-              <div className="text-2xl font-bold text-primary">
-                {getRemainingQuota('queries')}
+
+            <div className="flex items-center gap-4">
+              {/* Enhanced Research Button */}
+              <Button
+                onClick={() => navigate('/research/enhanced')}
+                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0 shadow-lg"
+                size="lg"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Enhanced Research
+                <Badge className="ml-2 bg-white/20 text-white border-0 text-xs">
+                  FREE TRIAL
+                </Badge>
+              </Button>
+
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground mb-1">
+                  Queries Remaining
+                </div>
+                <div className="text-2xl font-bold text-primary">
+                  {getRemainingQuota('queries')}
+                </div>
               </div>
             </div>
           </div>
