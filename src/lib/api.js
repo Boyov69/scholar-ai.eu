@@ -65,7 +65,7 @@ class APIClient {
         })
       }),
       mockStripeResponses.createCheckoutSession,
-      { useMock: isDevelopmentMode() }
+      { useMock: true } // Always use mock data until Supabase functions are deployed
     );
   }
 
@@ -78,7 +78,7 @@ class APIClient {
         })
       }),
       mockStripeResponses.createPortalSession,
-      { useMock: isDevelopmentMode() }
+      { useMock: true } // Always use mock data until Supabase functions are deployed
     );
   }
 
@@ -88,7 +88,7 @@ class APIClient {
         method: 'GET'
       }),
       mockStripeResponses.subscriptionStatus,
-      { useMock: isDevelopmentMode() }
+      { useMock: true } // Always use mock data until Supabase functions are deployed
     );
   }
 
