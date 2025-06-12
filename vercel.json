@@ -2,12 +2,6 @@
   "version": 2,
   "name": "scholar-ai",
   "alias": ["www.scholarai.eu", "scholarai.eu"],
-  "build": {
-    "env": {
-      "NODE_ENV": "production",
-      "VITE_APP_ENV": "production"
-    }
-  },
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
@@ -51,11 +45,6 @@
       ]
     }
   ],
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "env": {
     "NODE_ENV": "production",
     "VITE_APP_ENV": "production"
