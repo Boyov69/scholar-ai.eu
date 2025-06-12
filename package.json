@@ -1,6 +1,7 @@
 {
   "name": "scholar-ai",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "Europe's Premier Academic Research Platform",
   "homepage": "https://www.scholarai.eu",

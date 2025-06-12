@@ -32,6 +32,9 @@ import ScholarAICookieConsent from './components/CookieConsent';
 import DevModeNotice from './components/DevModeNotice';
 import DevLoginButton from './components/DevLoginButton';
 
+// Production configuration
+import './lib/production.js';
+
 function App() {
   return (
     <HelmetProvider>
