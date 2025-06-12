@@ -122,7 +122,7 @@ const ResearchDashboard = () => {
               </CardHeader>
               
               <CardContent>
-                <p className="text-white/80 text-sm mb-4 line-clamp-2">
+                <p className="text-white/80 text-sm mb-4 leading-relaxed">
                   {query.query_text}
                 </p>
                 

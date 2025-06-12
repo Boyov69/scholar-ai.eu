@@ -10,7 +10,6 @@ export const productionConfig = {
       "img-src 'self' data: https: blob:",
       "connect-src 'self' https://*.supabase.co https://api.stripe.com https://m.stripe.network wss://*.supabase.co",
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
-      "frame-ancestors 'self' https://vercel.live",
       "object-src 'none'",
       "base-uri 'self'"
     ].join('; '),

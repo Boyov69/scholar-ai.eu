@@ -96,7 +96,7 @@ const EnhancedResearchInterface = ({ onQuerySubmit, subscription }) => {
         )}
       </div>
       
-      <p className="text-sm text-white/80 mb-3 line-clamp-2">
+      <p className="text-sm text-white/80 mb-3 leading-relaxed">
         {agent.description}
       </p>
       

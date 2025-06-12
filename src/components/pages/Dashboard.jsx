@@ -187,11 +187,11 @@ const Dashboard = () => {
     {
       title: 'Enhanced Research',
       description: 'Multi-agent AI research with FutureHouse',
-      icon: Brain,
-      action: () => navigate('/research/enhanced'), // Access control handled in the route
-      color: 'bg-gradient-to-r from-blue-500 to-purple-500 text-white',
-      badge: 'NEW',
-      premium: tier !== 'ultra_intelligent' && tier !== 'phd_level' // Show as premium for non-eligible tiers
+      icon: Zap,
+      action: () => navigate('/research/enhanced'),
+      color: 'bg-gradient-to-r from-green-500 to-blue-500 text-white',
+      badge: 'FREE TRIAL',
+      highlight: true // No longer premium - free for all users
     },
     {
       title: 'Standard Research',

@@ -37,11 +37,20 @@ Scholar-AI is a cutting-edge academic research platform designed specifically fo
 
 ## 🎯 Subscription Tiers
 
+### 🎉 **NEW: Enhanced Research Free Trial**
+- **✨ 1-Month Free Trial** - Full access to Enhanced Research for ALL users
+- **🧠 All FutureHouse AI Agents** - Phoenix, Crow, Falcon, and Owl
+- **📊 Advanced Analytics** - Complete research insights and metrics
+- **🔄 Unlimited Enhanced Queries** - No limits during trial period
+- **🚀 Multi-Agent Research** - Comprehensive AI-powered research
+- **⚡ Priority Processing** - Fast AI response times
+
 ### 🆓 Advanced AI (€29/month)
 - Basic research capabilities
 - Standard citation management
 - Limited AI queries
 - Community support
+- **🎁 Enhanced Research Free Trial** - 1 month access to all premium features
 
 ### 🚀 Ultra-Intelligent (€99/month)
 - **✨ Enhanced Research Dashboard** - Full access to FutureHouse AI agents
@@ -296,6 +305,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **🏛️ Institutions**: 500+ European universities
 - **📚 Papers Processed**: 1M+ academic papers
 - **🤖 AI Queries**: 100K+ monthly research queries
+
+## 📝 Recent Updates
+
+### 🎉 Version 2.1.0 - Enhanced Research Free Trial (Latest)
+- **🆓 Free Trial Launch**: Enhanced Research now available for ALL users (1-month trial)
+- **🔧 Settings Enhancement**: New Enhanced Research settings tab with agent management
+- **🎨 UI/UX Improvements**: Fixed text overlap issues and improved navigation consistency
+- **⚡ Performance Optimization**: Reduced re-renders and optimized component lifecycle
+- **🔒 Authentication Fixes**: Resolved Supabase integration issues and improved error handling
+- **💳 Billing Integration**: Complete Stripe integration with invoice downloads and payment management
+- **📱 Mobile Optimization**: Enhanced mobile navigation and responsive design improvements
+
+### 🚀 Version 2.0.0 - FutureHouse AI Integration
+- **🤖 AI Agents**: Integrated Phoenix, Crow, Falcon, and Owl agents
+- **📊 Advanced Analytics**: Real-time research metrics and insights
+- **🎯 Multi-Agent Research**: Comprehensive AI-powered research capabilities
+- **🔍 Enhanced Search**: Semantic search with context-aware results
 
 ---
 

@@ -21,19 +21,97 @@ export const AuthProvider = ({ children }) => {
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('🔍 Auth initialization starting...');
+        console.log('🔍 VITE_APP_ENV:', import.meta.env.VITE_APP_ENV);
+        console.log('🔍 NODE_ENV:', import.meta.env.NODE_ENV);
+
+        // In development mode, skip auth check and use mock data
+        if (import.meta.env.VITE_APP_ENV === 'development') {
+          console.log('🧪 Development mode - using mock auth data');
+          const mockUser = {
+            id: 'demo-user-123',
+            email: 'demo@scholarai.eu',
+            created_at: new Date().toISOString(),
+            user_metadata: {
+              full_name: 'Demo User',
+              role: 'student'
+            }
+          };
+          setUser(mockUser);
+
+          const mockProfile = {
+            id: mockUser.id,
+            user_id: mockUser.id,
+            email: mockUser.email,
+            full_name: 'Demo User',
+            display_name: 'Demo User',
+            institution: 'Scholar AI University',
+            research_field: 'Computer Science',
+            role: 'student',
+            subscription_tier: 'premium',
+            subscription_status: 'active'
+          };
+          setProfile(mockProfile);
+          console.log('✅ Mock auth data set, setting loading to false');
+          setLoading(false);
+          return;
+        }
+
+        console.log('🔍 Production mode - checking for real user session');
         const { user: currentUser } = await auth.getCurrentUser();
         if (currentUser) {
+          console.log('✅ Found current user:', currentUser.email);
           setUser(currentUser);
           await loadUserProfile(currentUser.id);
+        } else {
+          console.log('ℹ️ No current user found');
         }
       } catch (err) {
-        setError(err.message);
+        console.warn('Auth initialization error:', err.message);
+        // Don't set error in development mode, just continue with mock data
+        if (import.meta.env.VITE_APP_ENV !== 'development') {
+          setError(err.message);
+        } else {
+          // Fallback to mock data if auth fails in development
+          console.log('🧪 Auth failed in development, using fallback mock data');
+          const mockUser = {
+            id: 'fallback-user-123',
+            email: 'fallback@scholarai.eu',
+            created_at: new Date().toISOString(),
+            user_metadata: {
+              full_name: 'Fallback User',
+              role: 'student'
+            }
+          };
+          setUser(mockUser);
+
+          const mockProfile = {
+            id: mockUser.id,
+            user_id: mockUser.id,
+            email: mockUser.email,
+            full_name: 'Fallback User',
+            display_name: 'Fallback User',
+            institution: 'Scholar AI University',
+            research_field: 'Computer Science',
+            role: 'student',
+            subscription_tier: 'premium',
+            subscription_status: 'active'
+          };
+          setProfile(mockProfile);
+        }
       } finally {
+        console.log('🔍 Setting loading to false in finally block');
         setLoading(false);
       }
     };
 
     getInitialSession();
+
+    // Fallback timeout to ensure loading is always resolved
+    const timeoutId = setTimeout(() => {
+      console.log('⚠️ Auth timeout reached, forcing loading to false');
+      setLoading(false);
+    }, 5000); // 5 second timeout
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -53,7 +131,7 @@ export const AuthProvider = ({ children }) => {
                 email: session.user.email,
                 full_name: session.user.user_metadata?.full_name || 'Test User',
                 role: session.user.user_metadata?.role || 'student',
-                subscription_tier: 'free',
+                subscription_tier: 'premium',
                 subscription_status: 'active'
               };
               setProfile(mockProfile);
@@ -67,7 +145,10 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const loadUserProfile = async (userId) => {
@@ -192,19 +273,25 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Update auth profile
-      const { data: authData, error: authError } = await auth.updateProfile(updates);
-      if (authError) throw authError;
+      // In development mode, just update local state
+      if (import.meta.env.VITE_APP_ENV === 'development') {
+        console.log('🧪 Development mode - updating profile locally');
+        const updatedProfile = { ...profile, ...updates };
+        setProfile(updatedProfile);
+        return { data: updatedProfile, error: null };
+      }
 
       // Update database profile
       if (user?.id) {
         const { data: profileData, error: profileError } = await db.updateUserProfile(user.id, updates);
         if (profileError) throw profileError;
         setProfile(profileData);
+        return { data: profileData, error: null };
       }
 
-      return { data: authData, error: null };
+      return { data: null, error: new Error('No user ID available') };
     } catch (err) {
+      console.error('Update profile error:', err);
       setError(err.message);
       return { data: null, error: err };
     } finally {

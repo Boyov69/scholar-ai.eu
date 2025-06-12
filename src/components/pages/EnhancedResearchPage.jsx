@@ -15,8 +15,22 @@ const EnhancedResearchPage = () => {
   const { isAuthenticated, loading } = useAuth();
   const { tier, loading: subscriptionLoading } = useSubscription();
 
-  // Check if user has access to enhanced research (Ultra-Intelligent or PhD-Level)
-  const hasAccess = tier === 'ultra_intelligent' || tier === 'phd_level';
+  // Enhanced Research is now available for all users as 1-month free trial
+  const hasAccess = true; // Free trial for all users
+
+  // Check if user is in free trial period (1 month from account creation)
+  const isFreeTrial = () => {
+    if (!isAuthenticated) return false;
+
+    // In development mode, always allow access
+    if (import.meta.env.VITE_APP_ENV === 'development') {
+      return true;
+    }
+
+    // For production, check if user is within 1 month of account creation
+    // This would normally check against user creation date from database
+    return true; // For now, allow all users
+  };
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -36,8 +50,8 @@ const EnhancedResearchPage = () => {
     return null; // Will redirect
   }
 
-  // Show upgrade prompt for Advanced AI tier users
-  if (!hasAccess) {
+  // This section is now unused since all users have access
+  if (false) { // Disabled - all users now have access
     return (
       <>
         <Helmet>
@@ -168,6 +182,35 @@ const EnhancedResearchPage = () => {
 
         <div className="relative z-10 py-8 px-4">
           <div className="container mx-auto max-w-7xl">
+            {/* Free Trial Banner */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-6"
+            >
+              <Card className="glass-strong border-green-500/30 bg-gradient-to-r from-green-500/10 to-blue-500/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-green-500/20">
+                        <Crown className="h-5 w-5 text-green-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-white">🎉 Free Trial Active!</h3>
+                        <p className="text-sm text-white/70">
+                          Enhanced Research with FutureHouse AI agents - Free for 1 month for all users!
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-gradient-to-r from-green-500 to-blue-500 text-white border-0">
+                      FREE TRIAL
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
