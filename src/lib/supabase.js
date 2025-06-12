@@ -4,10 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 const isDevelopmentMode = import.meta.env.VITE_APP_ENV === 'development' &&
                          import.meta.env.VITE_MOCK_PAYMENTS === 'true';
 
-// Production Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xicjnnzzykdhbmrpafhs.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
-
 // Get the correct base URL for redirects
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -18,147 +14,62 @@ const getBaseUrl = () => {
   return import.meta.env.VITE_APP_URL || 'https://www.scholarai.eu';
 };
 
-// Create mock Supabase client for development
-const createMockSupabaseClient = () => {
-  console.log('🧪 Using Mock Supabase Client for Development');
+// Supabase configuratie - FORCE CLOUD INSTANCE
+const supabaseUrl = 'https://xicjnnzzykdhbmrpafhs.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpY2pubnp6eWtkaGJtcnBhZmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzNzg0MjksImV4cCI6MjA2NDk1NDQyOX0.4N0ZKvuaCpDqWmmtgK_j-Ra4BkUQrVQXot2B8Gzs9kI'
 
-  return {
-    auth: {
-      signUp: async ({ email, password, options }) => {
-        console.log('🧪 Mock SignUp:', { email, password });
-        await new Promise(resolve => setTimeout(resolve, 1000));
+// Controleer of keys correct zijn geladen
+console.log('🔧 Supabase URL:', supabaseUrl);
+console.log('🔑 Supabase Key geladen:', supabaseAnonKey ? 'Ja (eerste 10 tekens: ' + supabaseAnonKey.substring(0, 10) + '...)' : 'Nee');
 
-        const mockUser = {
-          id: 'mock-user-' + Date.now(),
-          email: email,
-          user_metadata: options?.data || { full_name: 'Test User' },
-          created_at: new Date().toISOString()
-        };
-
-        return {
-          data: {
-            user: mockUser,
-            session: {
-              access_token: 'mock-access-token',
-              refresh_token: 'mock-refresh-token',
-              expires_in: 3600,
-              user: mockUser
-            }
-          },
-          error: null
-        };
-      },
-
-      signInWithPassword: async ({ email, password }) => {
-        console.log('🧪 Mock SignIn:', { email, password });
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Import mock users dynamically
-        const { getMockUser } = await import('./mockUsers.js');
-        const mockUserData = getMockUser(email);
-
-        const mockUser = mockUserData || {
-          id: 'mock-user-' + Date.now(),
-          email: email,
-          user_metadata: {
-            full_name: email.includes('admin') ? 'Admin User' :
-                      email.includes('professor') ? 'Prof. Test User' :
-                      email.includes('researcher') ? 'Dr. Test Researcher' : 'Test Student'
-          }
-        };
-
-        return {
-          data: {
-            user: mockUser,
-            session: {
-              access_token: 'mock-access-token',
-              refresh_token: 'mock-refresh-token',
-              expires_in: 3600,
-              user: mockUser
-            }
-          },
-          error: null
-        };
-      },
-
-      signOut: async () => {
-        console.log('🧪 Mock SignOut');
-        return { error: null };
-      },
-
-      getSession: async () => {
-        return { data: { session: null }, error: null };
-      },
-
-      getUser: async () => {
-        return { data: { user: null }, error: null };
-      },
-
-      onAuthStateChange: (callback) => {
-        console.log('🧪 Mock Auth State Change Listener');
-        return { data: { subscription: { unsubscribe: () => {} } } };
-      },
-
-      resetPasswordForEmail: async (email) => {
-        console.log('🧪 Mock Reset Password:', email);
-        return { data: {}, error: null };
+// Test Supabase connection (only in development)
+const testConnection = async () => {
+  if (isDevelopmentMode) {
+    try {
+      console.log('🧪 Testing Supabase connection...');
+      // Test with a simple health check instead of querying tables
+      const { data, error } = await supabase.auth.getSession();
+      if (error && error.message !== 'No session found') {
+        console.log('⚠️ Supabase auth test failed:', error.message);
+      } else {
+        console.log('✅ Supabase connection successful');
       }
-    },
-
-    from: (table) => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: null, error: null }),
-          limit: () => ({ data: [], error: null }),
-          order: () => ({ data: [], error: null })
-        }),
-        limit: () => ({ data: [], error: null }),
-        order: () => ({ data: [], error: null })
-      }),
-      insert: async (data) => {
-        console.log(`🧪 Mock DB Insert into ${table}:`, data);
-        return { data: Array.isArray(data) ? data : [data], error: null };
-      },
-      update: async (data) => {
-        console.log(`🧪 Mock DB Update in ${table}:`, data);
-        return { data: data, error: null };
-      },
-      delete: async () => {
-        console.log(`🧪 Mock DB Delete from ${table}`);
-        return { error: null };
-      }
-    }),
-
-    channel: () => ({
-      on: () => ({ subscribe: () => {} })
-    })
-  };
+    } catch (err) {
+      console.log('🔍 Supabase connection error details:', err);
+    }
+  }
 };
 
-// Create Supabase client with security options or mock client
-export const supabase = isDevelopmentMode ?
-  createMockSupabaseClient() :
-  createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce'
-    },
-    global: {
-      headers: {
-        'X-Client-Info': 'scholar-ai-web'
-      }
-    },
-    db: {
-      schema: 'public'
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 10
-      }
+// Test connection after a short delay (only in dev)
+if (isDevelopmentMode) {
+  setTimeout(testConnection, 1000);
+}
+
+// Create Supabase client with proper configuration
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  },
+  global: {
+    headers: {
+      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
     }
-  });
+  },
+  db: {
+    schema: 'public'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
 
 // Authentication helpers
 export const auth = {
@@ -193,18 +104,52 @@ export const auth = {
 
   signIn: async (email, password) => {
     try {
+      console.log('🔐 Attempting sign in for:', email);
+      console.log('🌐 Using Supabase URL:', supabaseUrl);
+
       if (isDevelopmentMode) {
-        console.log('🧪 Mock Auth SignIn');
-        return await supabase.auth.signInWithPassword({ email, password });
+        console.log('🧪 Development Mode - Using Mock Auth');
+        return {
+          data: {
+            user: {
+              id: '12345678-1234-1234-1234-123456789012', // Valid UUID format
+              email: email,
+              email_confirmed_at: new Date().toISOString(),
+              created_at: new Date().toISOString()
+            },
+            session: {
+              access_token: 'mock-access-token',
+              refresh_token: 'mock-refresh-token',
+              expires_in: 3600,
+              user: {
+                id: '12345678-1234-1234-1234-123456789012', // Valid UUID format
+                email: email
+              }
+            }
+          },
+          error: null
+        };
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
-      })
+      });
+
+      if (error) {
+        console.error('🚨 Sign in error details:', {
+          message: error.message,
+          status: error.status,
+          statusCode: error.status,
+          details: error
+        });
+      } else {
+        console.log('✅ Sign in successful:', data?.user?.email);
+      }
+
       return { data, error }
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('🔥 Sign in exception:', error);
       return { data: null, error }
     }
   },
@@ -291,16 +236,47 @@ export const db = {
 
   getUserResearchQueries: async (userId, limit = 50) => {
     try {
+      // Check if we're in development mode and return mock data
+      if (isDevelopmentMode) {
+        console.log('🧪 Mock Research Queries Data');
+        return {
+          data: [
+            {
+              id: 'mock-1',
+              user_id: userId,
+              title: 'AI in Academic Research',
+              question: 'How can artificial intelligence be effectively integrated into academic research workflows to enhance productivity and discovery?',
+              query: 'AI academic research integration productivity',
+              results: 'Mock results showing various AI tools and methodologies for research enhancement',
+              status: 'completed',
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 'mock-2',
+              user_id: userId,
+              title: 'Climate Change Impact Studies',
+              question: 'What are the latest findings on climate change impacts on European ecosystems?',
+              query: 'climate change Europe ecosystems impact',
+              results: 'Mock results with recent climate studies and ecosystem data',
+              status: 'completed',
+              created_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+            }
+          ],
+          error: null
+        };
+      }
+
       const { data, error } = await supabase
         .from('research_queries')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(limit)
+        .limit(limit);
+
       return { data, error }
     } catch (error) {
       console.error('Get user research queries error:', error)
-      return { data: null, error }
+      return { data: [], error }
     }
   },
 
@@ -322,22 +298,85 @@ export const db = {
   // Citations with security
   getUserCitations: async (userId, limit = 100) => {
     try {
+      // Check if we're in development mode and return mock data
+      if (isDevelopmentMode) {
+        console.log('🧪 Mock Citations Data');
+        return {
+          data: [
+            {
+              id: 'mock-citation-1',
+              user_id: userId,
+              title: 'Artificial Intelligence in Academic Research: A Comprehensive Review',
+              authors: 'Smith, J., Johnson, M., & Williams, K.',
+              journal: 'Journal of Academic Technology',
+              year: 2024,
+              doi: '10.1000/mock.citation.1',
+              url: 'https://example.com/paper1',
+              abstract: 'This paper provides a comprehensive review of AI applications in academic research...',
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 'mock-citation-2',
+              user_id: userId,
+              title: 'Climate Change Impacts on European Biodiversity',
+              authors: 'Anderson, L., Brown, P., & Davis, R.',
+              journal: 'European Environmental Science',
+              year: 2023,
+              doi: '10.1000/mock.citation.2',
+              url: 'https://example.com/paper2',
+              abstract: 'An analysis of climate change effects on biodiversity across European ecosystems...',
+              created_at: new Date(Date.now() - 172800000).toISOString() // 2 days ago
+            }
+          ],
+          error: null
+        };
+      }
+
       const { data, error } = await supabase
         .from('citations')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(limit)
+        .limit(limit);
+
       return { data, error }
     } catch (error) {
       console.error('Get user citations error:', error)
-      return { data: null, error }
+      return { data: [], error }
     }
   },
 
   // Workspaces with RLS
   getUserWorkspaces: async (userId) => {
     try {
+      // Check if we're in development mode and return mock data
+      if (isDevelopmentMode) {
+        console.log('🧪 Mock Workspaces Data');
+        return {
+          data: [
+            {
+              id: 'mock-workspace-1',
+              name: 'AI Research Lab',
+              description: 'Collaborative workspace for artificial intelligence research projects',
+              user_id: userId,
+              member_count: 5,
+              project_count: 12,
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 'mock-workspace-2',
+              name: 'Climate Studies Group',
+              description: 'Environmental research and climate change impact studies',
+              user_id: userId,
+              member_count: 8,
+              project_count: 6,
+              created_at: new Date(Date.now() - 259200000).toISOString() // 3 days ago
+            }
+          ],
+          error: null
+        };
+      }
+
       const { data, error } = await supabase
         .from('workspaces')
         .select(`
@@ -352,7 +391,7 @@ export const db = {
       return { data, error }
     } catch (error) {
       console.error('Get user workspaces error:', error)
-      return { data: null, error }
+      return { data: [], error }
     }
   },
 
@@ -513,4 +552,5 @@ export const realtime = {
 }
 
 export default supabase
+
 

@@ -22,44 +22,52 @@ export const productionConfig = {
 
   // Environment detection
   isProduction: () => {
-    return import.meta.env.PROD || 
+    return import.meta.env.PROD ||
            import.meta.env.VITE_APP_ENV === 'production' ||
            window.location.hostname.includes('scholarai.eu') ||
            window.location.hostname.includes('vercel.app');
   },
 
+  // Development environment detection
+  isDevelopment: () => {
+    return import.meta.env.DEV ||
+           import.meta.env.VITE_APP_ENV === 'development' ||
+           window.location.hostname === 'localhost' ||
+           window.location.hostname === '127.0.0.1';
+  },
+
   // Safe iframe handling
   handleIframeErrors: () => {
-    // Suppress cross-origin frame errors in production
-    if (productionConfig.isProduction()) {
-      const originalError = window.onerror;
-      window.onerror = (message, source, lineno, colno, error) => {
-        // Suppress known iframe security errors
-        if (typeof message === 'string' && (
-          message.includes('cross-origin frame') ||
-          message.includes('vercel.live') ||
-          message.includes('stripe.com') ||
-          message.includes('m.stripe.network')
-        )) {
-          console.debug('Suppressed cross-origin frame error:', message);
-          return true; // Prevent default error handling
-        }
-        
-        // Call original error handler for other errors
-        if (originalError) {
-          return originalError(message, source, lineno, colno, error);
-        }
-        return false;
-      };
-    }
+    // Suppress cross-origin frame errors in both production and development
+    const originalError = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      // Suppress known iframe security errors
+      if (typeof message === 'string' && (
+        message.includes('cross-origin frame') ||
+        message.includes('vercel.live') ||
+        message.includes('stripe.com') ||
+        message.includes('m.stripe.network') ||
+        message.includes('js.stripe.com') ||
+        message.includes('Failed to read a named property')
+      )) {
+        console.debug('Suppressed cross-origin frame error:', message);
+        return true; // Prevent default error handling
+      }
+
+      // Call original error handler for other errors
+      if (originalError) {
+        return originalError(message, source, lineno, colno, error);
+      }
+      return false;
+    };
   },
 
   // Initialize production optimizations
   init: () => {
+    // Always handle iframe errors (both dev and prod)
+    productionConfig.handleIframeErrors();
+
     if (productionConfig.isProduction()) {
-      // Handle iframe errors
-      productionConfig.handleIframeErrors();
-      
       // Disable console logs in production (except errors)
       if (!import.meta.env.DEV) {
         console.log = () => {};
