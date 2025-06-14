@@ -17,6 +17,8 @@ const getBaseUrl = () => {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xicjnnzzykdhbmrpafhs.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpY2pubnp6eWtkaGJtcnBhZmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzNzg0MjksImV4cCI6MjA2NDk1NDQyOX0.4N0ZKvuaCpDqWmmtgK_j-Ra4BkUQrVQXot2B8Gzs9kI'
 
+// ✅ Supabase client configured for production
+
 // Create Supabase client with proper configuration
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

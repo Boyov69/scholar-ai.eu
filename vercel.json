@@ -77,7 +77,7 @@
   "env": {
     "NODE_ENV": "production",
     "VITE_APP_ENV": "production",
-    "VITE_APP_URL": "https://www.scholarai.eu",
+    "VITE_APP_URL": "https://scholar-ai-ieolhkj9y-boyov69s-projects.vercel.app",
     "VITE_SUPABASE_URL": "https://xicjnnzzykdhbmrpafhs.supabase.co",
     "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpY2pubnp6eWtkaGJtcnBhZmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzNzg0MjksImV4cCI6MjA2NDk1NDQyOX0.4N0ZKvuaCpDqWmmtgK_j-Ra4BkUQrVQXot2B8Gzs9kI",
     "VITE_STRIPE_PUBLISHABLE_KEY": "pk_test_51RXhWXFvAnG1hED0LxM6g9sJbLpnpJGxL9CSTakFxYJuofDdxiBSRIduZlWWNuus9S53v0U337QUbTK55WJxa0SS00cOCuo83E",
