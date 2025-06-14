@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -6,6 +6,16 @@ import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { fixInputInteraction } from '../../utils/inputFix';
+import {
+  FileText,
+  Clock,
+  Sparkles,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Search
+} from 'lucide-react';
 import { 
   Search, 
   Sparkles, 
@@ -27,6 +37,14 @@ const ResearchQueryForm = ({
   const [queryText, setQueryText] = useState('');
   const [researchDepth, setResearchDepth] = useState('standard');
   const [citationStyle, setCitationStyle] = useState('apa');
+
+  // Fix input interaction issues
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fixInputInteraction();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const depthOptions = [
     {
@@ -117,6 +135,13 @@ const ResearchQueryForm = ({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter a descriptive title for your research..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+              style={{
+                pointerEvents: 'auto',
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                position: 'relative',
+                zIndex: 10
+              }}
               required
             />
           </div>
@@ -132,6 +157,13 @@ const ResearchQueryForm = ({
               onChange={(e) => setQueryText(e.target.value)}
               placeholder="Describe your research question in detail. Be specific about what you want to discover, analyze, or understand..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[120px] resize-none"
+              style={{
+                pointerEvents: 'auto',
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                position: 'relative',
+                zIndex: 10
+              }}
               required
             />
             <p className="text-xs text-white/60">
