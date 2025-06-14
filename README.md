@@ -341,3 +341,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Built with ❤️ in Europe for the global research community**
 
 *Transforming academic research through advanced AI technology and collaborative innovation.*
+
+<!-- Force deployment: 2025-06-14 -->
