@@ -24,6 +24,8 @@ export const SubscriptionProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      // Load real subscription data from Supabase
+
       // Get subscription status from Stripe
       const subscriptionData = await stripe.getSubscriptionStatus(userId);
       setSubscription(subscriptionData);
@@ -97,6 +99,8 @@ export const SubscriptionProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      // Open real Stripe billing portal
+
       if (!subscription?.customerId) {
         throw new Error('No active subscription found');
       }
@@ -104,6 +108,7 @@ export const SubscriptionProvider = ({ children }) => {
       const returnUrl = `${window.location.origin}/settings`;
       await stripe.createPortalSession(subscription.customerId, returnUrl);
     } catch (err) {
+      console.error('Billing management error:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -146,6 +151,64 @@ export const SubscriptionProvider = ({ children }) => {
     return limits[type]?.remaining || 0;
   };
 
+  // Agent access control based on subscription tier
+  const getAvailableAgents = () => {
+    const tier = subscription?.tier || 'free';
+
+    switch (tier) {
+      case 'free':
+      case 'basic':
+        return ['crow']; // Only Crow agent for basic users
+      case 'premium':
+      case 'ultra-intelligent':
+        return ['crow', 'falcon', 'owl', 'phoenix']; // All agents for premium+
+      case 'professional':
+      case 'phd-level':
+        return ['crow', 'falcon', 'owl', 'phoenix']; // All agents for professional+
+      default:
+        return ['crow']; // Default to basic access
+    }
+  };
+
+  const canUseAgent = (agentType) => {
+    const availableAgents = getAvailableAgents();
+    return availableAgents.includes(agentType);
+  };
+
+  const getAgentLimits = () => {
+    const tier = subscription?.tier || 'free';
+
+    switch (tier) {
+      case 'free':
+      case 'basic':
+        return {
+          maxQueries: 5, // 5 queries per month for basic
+          maxAgentsPerQuery: 1, // Only 1 agent per query
+          availableAgents: ['crow']
+        };
+      case 'premium':
+      case 'ultra-intelligent':
+        return {
+          maxQueries: 100, // 100 queries per month for premium
+          maxAgentsPerQuery: 4, // All agents per query
+          availableAgents: ['crow', 'falcon', 'owl', 'phoenix']
+        };
+      case 'professional':
+      case 'phd-level':
+        return {
+          maxQueries: -1, // Unlimited for professional
+          maxAgentsPerQuery: 4, // All agents per query
+          availableAgents: ['crow', 'falcon', 'owl', 'phoenix']
+        };
+      default:
+        return {
+          maxQueries: 5,
+          maxAgentsPerQuery: 1,
+          availableAgents: ['crow']
+        };
+    }
+  };
+
   const value = {
     subscription,
     usage,
@@ -158,6 +221,9 @@ export const SubscriptionProvider = ({ children }) => {
     getUpgradeBenefits,
     canPerformAction,
     getRemainingQuota,
+    getAvailableAgents,
+    canUseAgent,
+    getAgentLimits,
     isActive: subscription?.status === 'active',
     tier: subscription?.tier || 'free',
     refreshData: () => user?.id && loadSubscriptionData(user.id)

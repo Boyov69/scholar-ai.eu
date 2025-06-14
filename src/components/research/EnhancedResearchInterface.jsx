@@ -1,118 +1,177 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { 
-  Brain, 
   Search, 
-  Sparkles, 
-  ChevronDown, 
-  ChevronUp,
+  Brain, 
+  BookOpen, 
+  FileText, 
+  Download, 
+  Share, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle,
+  Loader2,
   Zap,
-  Clock,
-  Target,
-  BookOpen
+  Eye,
+  Filter,
+  Calendar,
+  Crown,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { 
-  getFutureHouseAgents, 
-  getAgentsByProvider, 
-  AgentProviders 
+import {
+  getFutureHouseAgents
 } from '../../lib/futureHouseAgents';
+import { useSubscription } from '../../hooks/useSubscription';
 
-const EnhancedResearchInterface = ({ onQuerySubmit, subscription }) => {
-  const [selectedAgents, setSelectedAgents] = useState(['crow']); // Default to Crow for quick searches
+const EnhancedResearchInterface = ({ onQuerySubmit }) => {
+  const { getAvailableAgents, canUseAgent, getAgentLimits, tier } = useSubscription();
+  const [selectedAgents, setSelectedAgents] = useState([]); // Start with no agents selected
   const [showAllAgents, setShowAllAgents] = useState(false);
   const [researchType, setResearchType] = useState('quick'); // quick, comprehensive, specialized
-  
-  // Get agents by provider
-  const futureHouseAgents = getFutureHouseAgents();
-  const openAIAgents = getAgentsByProvider(AgentProviders.OPENAI);
-  const anthropicAgents = getAgentsByProvider(AgentProviders.ANTHROPIC);
 
+  // 🔥 CRITICAL FIX: Communicate agent selection to parent component
+  useEffect(() => {
+    if (onQuerySubmit) {
+      console.log('🔄 Agent selection changed:', selectedAgents);
+      onQuerySubmit(selectedAgents);
+    }
+  }, [selectedAgents, onQuerySubmit]);
+
+  // Get agents by provider (memoized for performance)
+  const futureHouseAgents = useMemo(() => getFutureHouseAgents(), []);
+
+  // Get available agents and limits
+  const availableAgents = useMemo(() => getAvailableAgents(), [getAvailableAgents]);
+  const agentLimits = useMemo(() => getAgentLimits(), [getAgentLimits]);
+
+  // Research type configurations
   const researchTypes = [
     {
       id: 'quick',
       name: 'Quick Search',
-      description: 'Fast, targeted answers with citations',
-      recommended_agents: ['crow'],
+      description: 'Fast answers with key citations',
       icon: Zap,
-      color: 'from-blue-500 to-cyan-500'
+      color: 'from-blue-500 to-cyan-500',
+      recommended_agents: ['crow'],
+      estimatedTime: '1-2 min'
     },
     {
       id: 'comprehensive',
-      name: 'Deep Analysis',
-      description: 'Comprehensive literature review',
-      recommended_agents: ['falcon', 'claude-3'],
-      icon: BookOpen,
-      color: 'from-purple-500 to-pink-500'
+      name: 'Standard Analysis',
+      description: 'Balanced depth and speed',
+      icon: Search,
+      color: 'from-purple-500 to-pink-500',
+      recommended_agents: ['crow', 'falcon'],
+      estimatedTime: '3-5 min'
     },
     {
       id: 'specialized',
-      name: 'Specialized Research',
-      description: 'Domain-specific analysis',
-      recommended_agents: ['phoenix', 'owl'],
-      icon: Target,
-      color: 'from-green-500 to-teal-500'
+      name: 'Deep Analysis',
+      description: 'Thorough literature review',
+      icon: Brain,
+      color: 'from-orange-500 to-red-500',
+      recommended_agents: ['crow', 'falcon', 'owl', 'phoenix'],
+      estimatedTime: '5-10 min'
     }
   ];
 
-  const toggleAgent = (agentId) => {
-    setSelectedAgents(prev => 
-      prev.includes(agentId) 
-        ? prev.filter(id => id !== agentId)
-        : [...prev, agentId]
-    );
-  };
+  // Agent selection handler
+  const toggleAgent = useCallback((agentId) => {
+    // Check if user can use this agent
+    if (!canUseAgent(agentId)) {
+      return; // Don't allow selection of restricted agents
+    }
 
-  const selectResearchType = (type) => {
+    setSelectedAgents(prev => {
+      const isCurrentlySelected = prev.includes(agentId);
+
+      if (isCurrentlySelected) {
+        // Always allow deselection
+        return prev.filter(id => id !== agentId);
+      } else {
+        // Check if adding this agent would exceed limits
+        if (prev.length >= agentLimits.maxAgentsPerQuery && agentLimits.maxAgentsPerQuery !== -1) {
+          return prev; // Don't add if at limit
+        }
+        return [...prev, agentId];
+      }
+    });
+  }, [canUseAgent, agentLimits.maxAgentsPerQuery]);
+
+  const selectResearchType = useCallback((type) => {
     setResearchType(type.id);
     setSelectedAgents(type.recommended_agents);
-  };
+  }, []);
 
-  const AgentCard = ({ agent, isSelected, onToggle }) => (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => onToggle(agent.id)}
-      className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
-        isSelected
-          ? `bg-gradient-to-r ${agent.color} bg-opacity-20 border-white/30 shadow-lg`
-          : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-      }`}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
+  const AgentCard = ({ agent, isSelected, onToggle }) => {
+    const canUse = canUseAgent(agent.id);
+    const isRestricted = !canUse;
+
+    return (
+      <motion.div
+        whileHover={{ scale: isRestricted ? 1 : 1.02 }}
+        whileTap={{ scale: isRestricted ? 1 : 0.98 }}
+        onClick={() => !isRestricted && onToggle(agent.id)}
+        className={`relative p-3 rounded-lg border cursor-pointer transition-all ${
+          isSelected
+            ? `bg-gradient-to-r ${agent.color} bg-opacity-20 border-white/30`
+            : isRestricted
+            ? 'bg-gray-500/10 border-gray-500/30 cursor-not-allowed opacity-60'
+            : 'bg-white/5 border-white/10 hover:bg-white/10'
+        }`}
+      >
+        {/* Agent Info */}
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-lg">{agent.icon}</span>
-          <div>
-            <h4 className="font-semibold text-white">{agent.name}</h4>
-            <Badge variant="outline" className="text-xs border-white/20 text-white/70">
-              {agent.provider}
-            </Badge>
+          <div className="flex-1">
+            <h4 className="font-medium text-white text-sm">{agent.name}</h4>
+            <p className="text-xs text-white/60">{agent.provider}</p>
           </div>
+          {isSelected && <CheckCircle className="h-4 w-4 text-green-400" />}
+          {isRestricted && <Crown className="h-4 w-4 text-yellow-400" />}
         </div>
-        {isSelected && (
-          <Sparkles className="h-4 w-4 text-yellow-400" />
+
+        <p className="text-xs text-white/70 mb-2">{agent.description}</p>
+
+        {/* Capabilities */}
+        <div className="flex flex-wrap gap-1 mb-2">
+          {agent.capabilities?.slice(0, 2).map((cap, idx) => (
+            <Badge key={idx} variant="outline" className="text-xs border-white/20 text-white/60">
+              {cap}
+            </Badge>
+          ))}
+        </div>
+
+        {/* Restriction Notice */}
+        {isRestricted && (
+          <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
+            <p className="text-xs text-yellow-300 mb-1">
+              <strong>Ultra Required</strong>
+            </p>
+            <p className="text-xs text-white/60 mb-2">
+              This agent requires an Ultra subscription (€99/month)
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full text-xs border-blue-400/30 text-blue-300 hover:bg-blue-400/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = '/pricing';
+              }}
+            >
+              <Crown className="h-3 w-3 mr-1" />
+              Upgrade to Ultra
+            </Button>
+          </div>
         )}
-      </div>
-      
-      <p className="text-sm text-white/80 mb-3 leading-relaxed">
-        {agent.description}
-      </p>
-      
-      <div className="flex flex-wrap gap-1">
-        {agent.best_for?.slice(0, 2).map((use, index) => (
-          <Badge 
-            key={index} 
-            variant="secondary" 
-            className="text-xs bg-white/10 text-white/70 border-0"
-          >
-            {use}
-          </Badge>
-        ))}
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   return (
     <Card className="glass-strong border-white/20">
@@ -167,6 +226,49 @@ const EnhancedResearchInterface = ({ onQuerySubmit, subscription }) => {
               </Badge>
             </h3>
           </div>
+
+          {/* Tier-specific access info */}
+          {(tier === 'free' || tier === 'premium') && (
+            <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-medium text-blue-300">
+                  {tier === 'free' ? 'Free Trial Access' : 'Premium Plan (€29/month)'}
+                </span>
+              </div>
+
+              {/* Crow Agent Info */}
+              <div className="mb-3 p-2 bg-green-500/10 border border-green-500/30 rounded">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-green-400">✅</span>
+                  <strong className="text-green-300">Crow Agent Available</strong>
+                </div>
+                <p className="text-xs text-white/70 ml-6">
+                  <strong>FutureHouse Concise Search</strong> - Produces succinct answers citing scientific data sources, built with PaperQA2. Perfect for quick research questions and fact verification.
+                </p>
+              </div>
+
+              {/* Restricted Agents */}
+              <div className="mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-red-400">🔒</span>
+                  <strong className="text-red-300">Ultra Required</strong>
+                </div>
+                <p className="text-xs text-white/70 ml-6">
+                  <strong>Falcon, Owl & Phoenix</strong> agents require Ultra subscription (€99/month) for deep analysis, precedent search, and chemistry research.
+                </p>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs border-blue-400/30 text-blue-300 hover:bg-blue-400/10"
+                onClick={() => window.location.href = '/pricing'}
+              >
+                Upgrade to Ultra for All 4 Agents
+              </Button>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {futureHouseAgents.map((agent) => (
@@ -179,84 +281,6 @@ const EnhancedResearchInterface = ({ onQuerySubmit, subscription }) => {
             ))}
           </div>
         </div>
-
-        {/* Other Providers */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-white/90">General AI Agents</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAllAgents(!showAllAgents)}
-              className="text-white/70 hover:text-white"
-            >
-              {showAllAgents ? (
-                <>Hide <ChevronUp className="h-3 w-3 ml-1" /></>
-              ) : (
-                <>Show All <ChevronDown className="h-3 w-3 ml-1" /></>
-              )}
-            </Button>
-          </div>
-          
-          {showAllAgents && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-3"
-            >
-              {[...openAIAgents, ...anthropicAgents].map((agent) => (
-                <AgentCard
-                  key={agent.id}
-                  agent={agent}
-                  isSelected={selectedAgents.includes(agent.id)}
-                  onToggle={toggleAgent}
-                />
-              ))}
-            </motion.div>
-          )}
-        </div>
-
-        {/* Selected Agents Summary */}
-        {selectedAgents.length > 0 && (
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Search className="h-4 w-4 text-blue-400" />
-              <span className="text-sm font-medium text-white">
-                Selected Agents ({selectedAgents.length})
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedAgents.map((agentId) => {
-                const allAgents = [...futureHouseAgents, ...openAIAgents, ...anthropicAgents];
-                const agent = allAgents.find(a => a.id === agentId);
-                return agent ? (
-                  <Badge 
-                    key={agentId}
-                    className={`bg-gradient-to-r ${agent.color} text-white border-0`}
-                  >
-                    {agent.icon} {agent.name}
-                  </Badge>
-                ) : null;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Usage Limits */}
-        {subscription && (
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-400" />
-              <span className="text-sm text-white/90">
-                {subscription.monthly_query_limit - (subscription.monthly_queries_used || 0)} queries remaining
-              </span>
-            </div>
-            <Badge variant="outline" className="border-blue-400/30 text-blue-300">
-              {subscription.tier}
-            </Badge>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

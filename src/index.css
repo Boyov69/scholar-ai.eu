@@ -42,16 +42,66 @@
 /* Glassmorphic effects */
 .glass {
   @apply backdrop-blur-xl bg-card/80 border border-border/50;
-  box-shadow: 
+  box-shadow:
     0 8px 32px 0 rgba(31, 38, 135, 0.37),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
 .glass-strong {
   @apply backdrop-blur-2xl bg-card/90 border border-border/60;
-  box-shadow: 
+  box-shadow:
     0 12px 40px 0 rgba(31, 38, 135, 0.5),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Input field fixes */
+input[data-slot="input"] {
+  pointer-events: auto !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+input[data-slot="input"]:focus {
+  outline: none !important;
+  pointer-events: auto !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+/* Ensure input containers don't block interaction */
+.glass input[data-slot="input"],
+.glass-strong input[data-slot="input"],
+.glass textarea,
+.glass-strong textarea {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+/* Fix for textarea elements */
+textarea,
+textarea[data-slot="textarea"] {
+  pointer-events: auto !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  position: relative !important;
+  z-index: 10 !important;
+  cursor: text !important;
+}
+
+textarea:focus,
+textarea[data-slot="textarea"]:focus {
+  outline: none !important;
+  pointer-events: auto !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  z-index: 15 !important;
+  position: relative !important;
 }
 
 /* Ice gradient effects */

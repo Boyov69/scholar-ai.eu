@@ -29,11 +29,11 @@ const PricingPage = () => {
 
   const tiers = [
     {
-      id: 'advanced',
-      name: 'Advanced AI-Powered Research Platform',
+      id: 'premium',
+      name: 'Premium Research Platform',
       subtitle: 'Perfect for students and early researchers',
       icon: GraduationCap,
-      price: 29,
+      price: 19,
       popular: false,
       description: 'Perfect for students and early researchers',
       annualDiscount: 0.2, // 20% discount
@@ -43,7 +43,9 @@ const PricingPage = () => {
         'Standard citation formats (APA, MLA, Chicago)',
         'PDF export functionality',
         'Email support',
-        'Basic collaboration tools'
+        'Basic collaboration tools',
+        '1 month free trial',
+        'Enhanced Research: Crow Agent Only (FutureHouse Concise Search)'
       ],
       limits: {
         queries: 50,
@@ -52,11 +54,11 @@ const PricingPage = () => {
       }
     },
     {
-      id: 'ultra',
-      name: 'Ultra-Intelligent Academic Platform',
+      id: 'professional',
+      name: 'Professional Academic Platform',
       subtitle: 'Ideal for researchers and academic professionals',
       icon: Brain,
-      price: 99,
+      price: 69,
       popular: true,
       description: 'Ideal for researchers and academic professionals',
       annualDiscount: 0.2,
@@ -67,7 +69,11 @@ const PricingPage = () => {
         'Advanced collaboration workspace',
         'University SSO integration',
         'Priority support',
-        'Real-time research synthesis'
+        'Real-time research synthesis',
+        '1 month free trial',
+        'All 4 FutureHouse Agents (Crow, Falcon, Owl, Phoenix)',
+        'Advanced Analytics & Deep Literature Reviews',
+        'Precedent Search & Citation Analysis'
       ],
       limits: {
         queries: -1,
@@ -76,24 +82,27 @@ const PricingPage = () => {
       }
     },
     {
-      id: 'phd',
-      name: 'PhD-Level Academic Intelligence',
+      id: 'enterprise',
+      name: 'Enterprise Academic Intelligence',
       subtitle: 'Comprehensive solution for universities and institutions',
       icon: Crown,
-      price: 299,
+      price: 199,
       popular: false,
       description: 'Comprehensive solution for universities and institutions',
       annualDiscount: 0.25, // 25% discount
       color: 'gold',
       features: [
-        'Unlimited research queries',
+        'Everything in Professional',
         'Multi-user management dashboard',
         'Advanced analytics and reporting',
         'White-label customization',
         'Dedicated account manager',
         'API access for custom integrations',
         'SSO integration',
-        'GDPR compliance tools'
+        'GDPR compliance tools',
+        'Custom training and onboarding',
+        'Priority processing',
+        '1 month free trial'
       ],
       limits: {
         queries: -1,

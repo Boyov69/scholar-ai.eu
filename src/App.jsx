@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { HelmetProvider } from 'react-helmet-async';
+import { Toaster } from 'sonner';
 import './App.css';
+
+// Input interaction fixes
+import { fixInputInteraction, setupInputFixObserver } from './utils/inputFix';
 
 // Layout components
 import Header from './components/layout/Header';
@@ -21,6 +25,9 @@ import AuthPage from './components/pages/AuthPage';
 import PrivacyPolicy from './components/pages/PrivacyPolicy';
 import CookiePolicy from './components/pages/CookiePolicy';
 
+// Import new state-of-the-art workspace components
+import { WorkspaceDashboard } from './components/workspace/WorkspaceDashboard';
+
 // Context providers
 import { AuthProvider } from './hooks/useAuth';
 import { SubscriptionProvider } from './hooks/useSubscription';
@@ -36,6 +43,23 @@ import DevLoginButton from './components/DevLoginButton';
 import './lib/production.js';
 
 function App() {
+  // Fix input interaction issues on mount
+  useEffect(() => {
+    // Initial fix
+    fixInputInteraction();
+
+    // Setup observer for dynamic content
+    const observer = setupInputFixObserver();
+
+    // Periodic fix for any missed elements
+    const interval = setInterval(fixInputInteraction, 2000);
+
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <HelmetProvider>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
@@ -53,6 +77,7 @@ function App() {
                     <Route path="/research" element={<ResearchPage />} />
                     <Route path="/research/enhanced" element={<EnhancedResearchPage />} />
                     <Route path="/citations" element={<CitationsPage />} />
+                    <Route path="/workspaces" element={<WorkspaceDashboard />} />
                     <Route path="/workspace/:id?" element={<WorkspacePage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -63,6 +88,12 @@ function App() {
                 <ScholarAICookieConsent />
                 <DevModeNotice />
                 <DevLoginButton />
+                <Toaster
+                  position="top-right"
+                  richColors
+                  closeButton
+                  theme="dark"
+                />
               </div>
             </Router>
           </SubscriptionProvider>

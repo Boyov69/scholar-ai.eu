@@ -23,10 +23,12 @@ export const config = {
     secretKey: import.meta.env.VITE_STRIPE_SECRET_KEY || '',
     webhookSecret: import.meta.env.VITE_STRIPE_WEBHOOK_SECRET || '',
     priceIds: {
-      advanced_ai_monthly: import.meta.env.VITE_STRIPE_PRICE_ADVANCED_MONTHLY || 'price_advanced_ai_monthly',
-      advanced_ai_yearly: import.meta.env.VITE_STRIPE_PRICE_ADVANCED_YEARLY || 'price_advanced_ai_yearly',
-      ultra_intelligent_monthly: import.meta.env.VITE_STRIPE_PRICE_ULTRA_MONTHLY || 'price_ultra_intelligent_monthly',
-      ultra_intelligent_yearly: import.meta.env.VITE_STRIPE_PRICE_ULTRA_YEARLY || 'price_ultra_intelligent_yearly',
+      premium_monthly: import.meta.env.VITE_STRIPE_PRICE_PREMIUM_MONTHLY || 'price_premium_monthly',
+      premium_yearly: import.meta.env.VITE_STRIPE_PRICE_PREMIUM_YEARLY || 'price_premium_yearly',
+      professional_monthly: import.meta.env.VITE_STRIPE_PRICE_PROFESSIONAL_MONTHLY || 'price_professional_monthly',
+      professional_yearly: import.meta.env.VITE_STRIPE_PRICE_PROFESSIONAL_YEARLY || 'price_professional_yearly',
+      enterprise_monthly: import.meta.env.VITE_STRIPE_PRICE_ENTERPRISE_MONTHLY || 'price_enterprise_monthly',
+      enterprise_yearly: import.meta.env.VITE_STRIPE_PRICE_ENTERPRISE_YEARLY || 'price_enterprise_yearly',
       phd_level_monthly: import.meta.env.VITE_STRIPE_PRICE_PHD_MONTHLY || 'price_phd_level_monthly',
       phd_level_yearly: import.meta.env.VITE_STRIPE_PRICE_PHD_YEARLY || 'price_phd_level_yearly'
     }
@@ -46,13 +48,13 @@ export const config = {
 
   // Subscription tiers and limits
   subscriptionTiers: {
-    advanced_ai: {
-      name: 'Advanced AI-Powered Research Platform',
-      monthlyPrice: 29,
-      yearlyPrice: 24, // €24/month when billed yearly
+    premium: {
+      name: 'Premium Research Platform',
+      monthlyPrice: 19,
+      yearlyPrice: 15, // €15/month when billed yearly
       stripePriceId: {
-        monthly: 'price_advanced_ai_monthly',
-        yearly: 'price_advanced_ai_yearly'
+        monthly: 'price_premium_monthly',
+        yearly: 'price_premium_yearly'
       },
       limits: {
         researchQueries: 50,
@@ -66,16 +68,17 @@ export const config = {
         'Standard citation formats (APA, MLA, Chicago)',
         'PDF export functionality',
         'Email support',
-        'Basic collaboration tools'
+        'Enhanced Research Features (Tier 2)',
+        'Multi-Agent Research (Phoenix, Crow, Falcon, Owl)'
       ]
     },
-    ultra_intelligent: {
-      name: 'Ultra-Intelligent Academic Platform',
-      monthlyPrice: 99,
-      yearlyPrice: 79, // €79/month when billed yearly
+    professional: {
+      name: 'Professional Academic Platform',
+      monthlyPrice: 69,
+      yearlyPrice: 55, // €55/month when billed yearly
       stripePriceId: {
-        monthly: 'price_ultra_intelligent_monthly',
-        yearly: 'price_ultra_intelligent_yearly'
+        monthly: 'price_professional_monthly',
+        yearly: 'price_professional_yearly'
       },
       limits: {
         researchQueries: -1, // Unlimited
@@ -90,17 +93,18 @@ export const config = {
         'Advanced collaboration workspace',
         'University SSO integration',
         'Priority support',
-        'Real-time research synthesis',
-        'Advanced export formats'
+        'All Enhanced Research Features (Tier 3)',
+        'Advanced Analytics & Deep Literature Reviews',
+        'Precedent Search & Citation Analysis'
       ]
     },
-    phd_level: {
-      name: 'PhD-Level Academic Intelligence',
-      monthlyPrice: 299,
-      yearlyPrice: 249, // €249/month when billed yearly
+    enterprise: {
+      name: 'Enterprise Academic Intelligence',
+      monthlyPrice: 199,
+      yearlyPrice: 149, // €149/month when billed yearly
       stripePriceId: {
-        monthly: 'price_phd_level_monthly',
-        yearly: 'price_phd_level_yearly'
+        monthly: 'price_enterprise_monthly',
+        yearly: 'price_enterprise_yearly'
       },
       limits: {
         researchQueries: -1, // Unlimited
@@ -110,7 +114,7 @@ export const config = {
         citationsPerQuery: -1 // Unlimited
       },
       features: [
-        'Unlimited research queries',
+        'Everything in Professional',
         'Multi-user management dashboard',
         'Advanced analytics and reporting',
         'White-label customization',

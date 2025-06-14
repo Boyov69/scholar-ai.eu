@@ -226,11 +226,14 @@ const ResearchQueryForm = ({
 
           {/* Validation Messages */}
           {selectedAgents.length === 0 && (
-            <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-yellow-400" />
-              <span className="text-sm text-yellow-300">
-                Please select at least one AI agent to proceed.
-              </span>
+            <div className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-blue-400" />
+              <div className="text-sm text-blue-300">
+                <p className="font-medium mb-1">Select an AI agent to start your research</p>
+                <p className="text-xs text-blue-300/80">
+                  💡 Tip: <strong>Crow agent</strong> (FutureHouse Concise Search) is available with your {subscription?.tier === 'premium' ? '€29 Premium plan' : 'free trial'}!
+                </p>
+              </div>
             </div>
           )}
 

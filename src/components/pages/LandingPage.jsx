@@ -4,20 +4,21 @@ import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { 
-  Brain, 
-  Search, 
-  BookOpen, 
-  Users, 
-  Zap, 
-  Shield, 
-  Globe, 
+import {
+  Brain,
+  Search,
+  BookOpen,
+  Users,
+  Zap,
+  Shield,
+  Globe,
   ArrowRight,
   CheckCircle,
   Star,
   TrendingUp,
   GraduationCap,
-  Crown
+  Crown,
+  User
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -28,56 +29,78 @@ const LandingPage = () => {
 
   const pricingTiers = [
     {
-      id: 'advanced',
-      title: 'Advanced AI-Powered Research Platform',
+      id: 'free',
+      title: 'Free Research Access',
+      subtitle: 'Get started with basic research tools',
+      icon: User,
+      price: 0,
+      originalPrice: null,
+      features: [
+        '5 research queries/month',
+        'Basic citation formats (APA, MLA)',
+        'Standard search functionality',
+        'Community support',
+        'Basic export options',
+        'No credit card required'
+      ],
+      popular: false,
+      cta: 'Get Started Free'
+    },
+    {
+      id: 'premium',
+      title: 'Premium Research Platform',
       subtitle: 'Perfect for students and early researchers',
       icon: GraduationCap,
-      price: billingCycle === 'monthly' ? 29 : 22,
-      originalPrice: billingCycle === 'monthly' ? null : 29,
+      price: billingCycle === 'monthly' ? 19 : 15,
+      originalPrice: billingCycle === 'monthly' ? null : 19,
       features: [
         '50 research queries/month',
         'Standard citation formats (APA, MLA, Chicago)',
         'PDF export functionality',
         'Email support',
-        'Basic collaboration tools'
+        '30-day free trial',
+        'Enhanced Research: Crow Agent Only (FutureHouse Concise Search)'
       ],
       popular: false,
       cta: 'Start Free Trial'
     },
     {
-      id: 'ultra',
-      title: 'Ultra-Intelligent Academic Platform',
+      id: 'professional',
+      title: 'Professional Academic Platform',
       subtitle: 'Ideal for researchers and academic professionals',
       icon: Brain,
-      price: billingCycle === 'monthly' ? 99 : 74,
-      originalPrice: billingCycle === 'monthly' ? null : 99,
+      price: billingCycle === 'monthly' ? 69 : 55,
+      originalPrice: billingCycle === 'monthly' ? null : 69,
       features: [
         'Unlimited research queries',
         'All citation formats + BibTeX',
         'Advanced collaboration workspace',
         'University SSO integration',
         'Priority support',
-        'Real-time research synthesis'
+        '30-day free trial',
+        'All 4 FutureHouse Agents (Crow, Falcon, Owl, Phoenix)',
+        'Advanced Analytics & Deep Literature Reviews'
       ],
       popular: true,
       cta: 'Start Free Trial'
     },
     {
-      id: 'phd',
-      title: 'PhD-Level Academic Intelligence',
+      id: 'enterprise',
+      title: 'Enterprise Academic Intelligence',
       subtitle: 'Comprehensive solution for universities and institutions',
       icon: Crown,
-      price: billingCycle === 'monthly' ? 299 : 224,
-      originalPrice: billingCycle === 'monthly' ? null : 299,
+      price: billingCycle === 'monthly' ? 199 : 149,
+      originalPrice: billingCycle === 'monthly' ? null : 199,
       features: [
-        'Unlimited research queries',
+        'Everything in Professional',
         'Multi-user management dashboard',
         'Advanced analytics and reporting',
         'White-label customization',
         'Dedicated account manager',
         'API access for custom integrations',
         'SSO integration',
-        'GDPR compliance tools'
+        'GDPR compliance tools',
+        '30-day free trial'
       ],
       popular: false,
       cta: 'Contact Sales'
@@ -384,13 +407,13 @@ const LandingPage = () => {
           >
             <Badge variant="outline" className="mb-6 ice-gradient text-white border-primary/30">
               <Zap className="h-3 w-3 mr-1" />
-              Flexible Pricing
+              Available Plans
             </Badge>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 ice-gradient-text">
-              Choose Your Research Intelligence Level
+              Choose the Perfect Plan for Your Research Needs
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Scale your research capabilities from Advanced AI to PhD-Level Intelligence
+              All plans include a 30-day free trial. Start your research journey today with no commitment.
             </p>
             
             {/* Billing Toggle */}
@@ -409,7 +432,7 @@ const LandingPage = () => {
             </div>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {pricingTiers.map((tier, index) => (
               <motion.div
                 key={tier.id}
@@ -594,7 +617,7 @@ const LandingPage = () => {
                 <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span>14-day free trial</span>
+                    <span>30-day free trial</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
@@ -22,11 +22,6 @@ const EnhancedResearchPage = () => {
   const isFreeTrial = () => {
     if (!isAuthenticated) return false;
 
-    // In development mode, always allow access
-    if (import.meta.env.VITE_APP_ENV === 'development') {
-      return true;
-    }
-
     // For production, check if user is within 1 month of account creation
     // This would normally check against user creation date from database
     return true; // For now, allow all users
@@ -38,16 +33,35 @@ const EnhancedResearchPage = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  if (loading || subscriptionLoading) {
+  // Add timeout for loading states to prevent infinite loading
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingTimeout(true);
+    }, 3000); // 3 second timeout
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if ((loading || subscriptionLoading) && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="space-y-4 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading Enhanced Research...</p>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return null; // Will redirect
+  }
+
+  // Force render after timeout even if loading states are stuck
+  if (loadingTimeout) {
+    console.log('⚠️ Loading timeout reached, forcing Enhanced Research render');
   }
 
   // This section is now unused since all users have access

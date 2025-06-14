@@ -8,13 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { Alert, AlertDescription } from '../ui/alert';
-import { 
-  BookOpen, 
-  Download, 
-  Share, 
-  Search, 
-  Filter, 
-  Eye, 
+import {
+  BookOpen,
+  Download,
+  Share,
+  Search,
+  Filter,
+  Eye,
   EyeOff,
   Copy,
   ExternalLink,
@@ -31,11 +31,13 @@ import {
   SortDesc,
   Grid,
   List,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../lib/supabase';
 import { citationFormats, exportFormats } from '../../lib/config';
+import { CitationCard } from '../citations/CitationCard';
 
 const CitationsPage = () => {
   const navigate = useNavigate();
@@ -46,6 +48,7 @@ const CitationsPage = () => {
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   
   // Filters and search
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,7 +57,7 @@ const CitationsPage = () => {
   const [sortBy, setSortBy] = useState('relevance');
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('list');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true); // Show comprehensive features by default
   
   // Citation expansion state
   const [expandedCitations, setExpandedCitations] = useState(new Set());
@@ -67,39 +70,176 @@ const CitationsPage = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadQueries();
-      if (selectedQuery) {
-        loadCitations(selectedQuery);
-      }
+      // Load all citations by default, or filter by selected query
+      loadCitations(selectedQuery || 'all');
     }
   }, [isAuthenticated, selectedQuery]);
 
+  // Add global refresh function for research page to trigger
+  useEffect(() => {
+    window.citationsPageRefresh = () => {
+      console.log('🔄 Citations page refresh triggered from research completion');
+      console.log('💾 Checking window storage for recent citations...');
+      if (window.recentCitations && window.recentCitations.length > 0) {
+        console.log('💾 Found recent citations in window storage:', window.recentCitations.length);
+        setCitations(window.recentCitations);
+      } else {
+        loadCitations(selectedQuery || 'all');
+      }
+    };
+
+    return () => {
+      delete window.citationsPageRefresh;
+    };
+  }, [selectedQuery]);
+
+  // Check if the selected query exists in the queries list
+  useEffect(() => {
+    if (selectedQuery && selectedQuery !== 'all' && queries.length > 0) {
+      const queryExists = queries.find(q => q.id === selectedQuery);
+      if (!queryExists) {
+        console.warn('⚠️ Selected query not found in user queries, showing all citations');
+        setSelectedQuery('all');
+      }
+    }
+  }, [selectedQuery, queries]);
+
   const loadQueries = async () => {
     if (!user?.id) return;
-    
+
     try {
+      console.log('📋 Loading research queries for user:', user.id);
       const { data, error } = await db.getUserResearchQueries(user.id);
       if (error) throw error;
+      console.log('📋 Found queries:', data?.length || 0);
       setQueries(data || []);
     } catch (err) {
+      console.error('❌ Error loading queries:', err);
       setError(err.message);
     }
   };
 
   const loadCitations = async (queryId) => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
-      // Get all user citations and filter by query_id
+      console.log('🔍 Loading citations for user:', user.id, 'query:', queryId);
+
+      // 🚀 ENHANCED: Check window storage first for recent citations
+      if (window.recentCitations && window.recentCitations.length > 0) {
+        console.log('💾 Found recent citations in window storage:', window.recentCitations.length);
+
+        if (queryId && queryId !== 'all') {
+          // Filter by query_id if specified
+          const queryCitations = window.recentCitations.filter(citation =>
+            citation.metadata?.query_id === queryId ||
+            citation.query_id === queryId
+          );
+          console.log('🎯 Filtered window citations for query:', queryId, '- Found:', queryCitations.length, 'citations');
+          setCitations(queryCitations);
+          setLoading(false);
+          return;
+        } else {
+          // Show all window citations
+          console.log('📚 Showing all window citations:', window.recentCitations.length);
+          setCitations(window.recentCitations);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to database if no window citations
+      console.log('💾 No window citations found, loading from database...');
       const { data, error } = await db.getUserCitations(user.id);
       if (error) throw error;
-      
-      const queryCitations = data?.filter(citation => citation.query_id === queryId) || [];
-      setCitations(queryCitations);
+
+      console.log('📚 All user citations:', data?.length || 0, 'citations found');
+
+      if (queryId && queryId !== 'all') {
+        // Filter by query_id if specified
+        const queryCitations = data?.filter(citation =>
+          citation.metadata?.query_id === queryId ||
+          citation.query_id === queryId
+        ) || [];
+        console.log('🎯 Filtered citations for query:', queryId, '- Found:', queryCitations.length, 'citations');
+
+        if (queryCitations.length === 0) {
+          console.log('⚠️ No citations found for query:', queryId);
+          console.log('📋 Available query IDs in citations:',
+            data?.map(c => c.metadata?.query_id || c.query_id).filter(Boolean)
+          );
+        }
+
+        setCitations(queryCitations);
+      } else {
+        // Show all citations
+        console.log('📚 Showing all citations:', data?.length || 0);
+        setCitations(data || []);
+      }
     } catch (err) {
+      console.error('❌ Citation loading error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🗑️ Delete Citation Function
+  const deleteCitation = async (citationId) => {
+    try {
+      console.log('🗑️ CitationsPage: Starting delete for citation:', citationId);
+      console.log('📊 Current citations count:', citations.length);
+
+      const { error } = await db.deleteCitation(citationId);
+
+      if (error) {
+        console.error('❌ Database delete failed:', error);
+        throw new Error(error.message || 'Failed to delete citation');
+      }
+
+      console.log('✅ Database delete successful, updating frontend state...');
+
+      // Remove from local state
+      const updatedCitations = citations.filter(c => c.id !== citationId);
+      console.log('📊 Updated citations count:', updatedCitations.length);
+      setCitations(updatedCitations);
+
+      setSelectedCitations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(citationId);
+        return newSet;
+      });
+
+      console.log('✅ Frontend state updated successfully');
+      setError(null); // Clear any previous errors
+      setSuccessMessage('Citation deleted successfully');
+      setTimeout(() => setSuccessMessage(null), 3000); // Clear success message after 3 seconds
+    } catch (err) {
+      console.error('❌ Delete citation error:', err);
+      setError(err.message);
+    }
+  };
+
+  // ✏️ Update Citation Function
+  const updateCitation = async (citationId, updateData) => {
+    try {
+      console.log('✏️ Updating citation:', citationId, updateData);
+      const { data, error } = await db.updateCitation(citationId, updateData);
+
+      if (error) {
+        throw new Error(error.message || 'Failed to update citation');
+      }
+
+      // Update local state
+      setCitations(citations.map(c =>
+        c.id === citationId ? { ...c, ...updateData } : c
+      ));
+
+      console.log('✅ Citation updated successfully');
+    } catch (err) {
+      console.error('❌ Update citation error:', err);
+      setError(err.message);
     }
   };
 
@@ -132,8 +272,19 @@ const CitationsPage = () => {
   };
 
   const formatCitation = (citation, style = citationStyle) => {
-    const authors = citation.authors?.join(', ') || 'Unknown Author';
-    const year = citation.year || 'n.d.';
+    // Handle authors field properly - could be array, string, or null
+    let authors = 'Unknown Author';
+    if (citation.authors) {
+      if (typeof citation.authors === 'string') {
+        authors = citation.authors;
+      } else if (Array.isArray(citation.authors)) {
+        authors = citation.authors.join(', ');
+      }
+    }
+
+    // Extract year from publication_date if year field doesn't exist
+    const year = citation.year ||
+                 (citation.publication_date ? new Date(citation.publication_date).getFullYear() : 'n.d.');
     const title = citation.title || 'Untitled';
     const journal = citation.journal || '';
     const volume = citation.volume || '';
@@ -254,12 +405,24 @@ const CitationsPage = () => {
   const filteredCitations = citations.filter(citation => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
+
+    // Handle authors field properly
+    const authorsMatch = citation.authors ?
+      (Array.isArray(citation.authors) ?
+        citation.authors.some(author => author.toLowerCase().includes(searchLower)) :
+        citation.authors.toLowerCase().includes(searchLower)
+      ) : false;
+
+    // Handle tags/keywords field properly
+    const tagsMatch = (citation.keywords || citation.tags) ?
+      (citation.keywords || citation.tags).some(tag => tag.toLowerCase().includes(searchLower)) : false;
+
     return (
       citation.title?.toLowerCase().includes(searchLower) ||
-      citation.authors?.some(author => author.toLowerCase().includes(searchLower)) ||
+      authorsMatch ||
       citation.journal?.toLowerCase().includes(searchLower) ||
       citation.abstract?.toLowerCase().includes(searchLower) ||
-      citation.keywords?.some(keyword => keyword.toLowerCase().includes(searchLower))
+      tagsMatch
     );
   }).sort((a, b) => {
     let aValue, bValue;
@@ -278,8 +441,8 @@ const CitationsPage = () => {
         bValue = b.journal || '';
         break;
       case 'authors':
-        aValue = a.authors?.[0] || '';
-        bValue = b.authors?.[0] || '';
+        aValue = Array.isArray(a.authors) ? a.authors[0] || '' : a.authors || '';
+        bValue = Array.isArray(b.authors) ? b.authors[0] || '' : b.authors || '';
         break;
       default: // relevance
         aValue = a.created_at || '';
@@ -331,7 +494,10 @@ const CitationsPage = () => {
                 Citation Manager
               </h1>
               <p className="text-muted-foreground text-lg">
-                Organize, format, and export your research citations
+                {selectedQuery && selectedQuery !== 'all'
+                  ? `Showing citations for: ${queries.find(q => q.id === selectedQuery)?.title || 'Selected Query'}`
+                  : 'Organize, format, and export your research citations'
+                }
               </p>
             </div>
             
@@ -490,6 +656,13 @@ const CitationsPage = () => {
           </Alert>
         )}
 
+        {successMessage && (
+          <Alert className="mb-6 border-green-500/50 bg-green-500/10">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Citations List */}
         {loading ? (
           <div className="text-center py-12">
@@ -503,163 +676,20 @@ const CitationsPage = () => {
             transition={{ duration: 0.4 }}
             className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}
           >
-            {filteredCitations.map((citation, index) => {
-              const isExpanded = expandedCitations.has(citation.id);
-              const isSelected = selectedCitations.has(citation.id);
-              
-              return (
-                <motion.div
-                  key={citation.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <Card className={`glass hover:glass-strong transition-all duration-300 ${
-                    isSelected ? 'ring-2 ring-primary/50' : ''
-                  }`}>
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleCitationSelection(citation.id)}
-                              className="rounded border-border"
-                            />
-                            <CardTitle className="text-lg leading-tight">
-                              {citation.title}
-                            </CardTitle>
-                          </div>
-                          
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              {citation.authors?.slice(0, 3).join(', ')}
-                              {citation.authors?.length > 3 && ' et al.'}
-                            </div>
-                            {citation.year && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                {citation.year}
-                              </div>
-                            )}
-                            {citation.journal && (
-                              <div className="flex items-center gap-1">
-                                <BookOpen className="h-4 w-4" />
-                                {citation.journal}
-                              </div>
-                            )}
-                          </div>
-
-                          {citation.keywords && citation.keywords.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {citation.keywords.slice(0, 5).map((keyword, i) => (
-                                <Badge key={i} variant="secondary" className="text-xs">
-                                  {keyword}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex gap-1 ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyCitation(citation)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          {citation.url && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(citation.url, '_blank')}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleCitationExpansion(citation.id)}
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      {/* Formatted Citation */}
-                      <div className="bg-muted/30 rounded-lg p-4 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Quote className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{citationStyle.toUpperCase()} Format</span>
-                        </div>
-                        <p className="text-sm leading-relaxed">
-                          {formatCitation(citation)}
-                        </p>
-                      </div>
-
-                      {/* Expanded Details */}
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="space-y-4"
-                        >
-                          <Separator />
-                          
-                          {citation.abstract && (
-                            <div>
-                              <h4 className="font-medium mb-2">Abstract</h4>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                {citation.abstract}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            {citation.doi && (
-                              <div>
-                                <span className="font-medium">DOI:</span>
-                                <p className="text-muted-foreground">{citation.doi}</p>
-                              </div>
-                            )}
-                            {citation.volume && (
-                              <div>
-                                <span className="font-medium">Volume:</span>
-                                <p className="text-muted-foreground">{citation.volume}</p>
-                              </div>
-                            )}
-                            {citation.issue && (
-                              <div>
-                                <span className="font-medium">Issue:</span>
-                                <p className="text-muted-foreground">{citation.issue}</p>
-                              </div>
-                            )}
-                            {citation.pages && (
-                              <div>
-                                <span className="font-medium">Pages:</span>
-                                <p className="text-muted-foreground">{citation.pages}</p>
-                              </div>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+            {filteredCitations.map((citation, index) => (
+              <motion.div
+                key={citation.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <CitationCard
+                  citation={citation}
+                  onDelete={deleteCitation}
+                  onUpdate={updateCitation}
+                />
+              </motion.div>
+            ))}
           </motion.div>
         ) : (
           <Card className="glass-strong text-center">
@@ -667,18 +697,33 @@ const CitationsPage = () => {
               <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-xl font-semibold mb-2">No Citations Found</h3>
               <p className="text-muted-foreground mb-6">
-                {selectedQuery 
-                  ? 'No citations found for the selected query. Try a different query or search term.'
+                {selectedQuery && selectedQuery !== 'all'
+                  ? 'No citations found for this specific research query. The query may not have generated citations yet, or they may have been processed differently.'
                   : 'Start by submitting a research query to generate citations.'
                 }
               </p>
-              <Button 
-                onClick={() => navigate('/research')}
-                className="ice-gradient hover:opacity-90"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Start Research
-              </Button>
+              <div className="flex gap-3 justify-center">
+                {selectedQuery && selectedQuery !== 'all' && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedQuery('all');
+                      loadCitations('all');
+                    }}
+                    className="border-primary/30"
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    View All Citations
+                  </Button>
+                )}
+                <Button
+                  onClick={() => navigate('/research')}
+                  className="ice-gradient hover:opacity-90"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Start New Research
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

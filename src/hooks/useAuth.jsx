@@ -25,37 +25,7 @@ export const AuthProvider = ({ children }) => {
         console.log('🔍 VITE_APP_ENV:', import.meta.env.VITE_APP_ENV);
         console.log('🔍 NODE_ENV:', import.meta.env.NODE_ENV);
 
-        // In development mode, skip auth check and use mock data
-        if (import.meta.env.VITE_APP_ENV === 'development') {
-          console.log('🧪 Development mode - using mock auth data');
-          const mockUser = {
-            id: 'demo-user-123',
-            email: 'demo@scholarai.eu',
-            created_at: new Date().toISOString(),
-            user_metadata: {
-              full_name: 'Demo User',
-              role: 'student'
-            }
-          };
-          setUser(mockUser);
-
-          const mockProfile = {
-            id: mockUser.id,
-            user_id: mockUser.id,
-            email: mockUser.email,
-            full_name: 'Demo User',
-            display_name: 'Demo User',
-            institution: 'Scholar AI University',
-            research_field: 'Computer Science',
-            role: 'student',
-            subscription_tier: 'premium',
-            subscription_status: 'active'
-          };
-          setProfile(mockProfile);
-          console.log('✅ Mock auth data set, setting loading to false');
-          setLoading(false);
-          return;
-        }
+        // Get current session from Supabase
 
         console.log('🔍 Production mode - checking for real user session');
         const { user: currentUser } = await auth.getCurrentUser();
@@ -68,37 +38,7 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.warn('Auth initialization error:', err.message);
-        // Don't set error in development mode, just continue with mock data
-        if (import.meta.env.VITE_APP_ENV !== 'development') {
-          setError(err.message);
-        } else {
-          // Fallback to mock data if auth fails in development
-          console.log('🧪 Auth failed in development, using fallback mock data');
-          const mockUser = {
-            id: 'fallback-user-123',
-            email: 'fallback@scholarai.eu',
-            created_at: new Date().toISOString(),
-            user_metadata: {
-              full_name: 'Fallback User',
-              role: 'student'
-            }
-          };
-          setUser(mockUser);
-
-          const mockProfile = {
-            id: mockUser.id,
-            user_id: mockUser.id,
-            email: mockUser.email,
-            full_name: 'Fallback User',
-            display_name: 'Fallback User',
-            institution: 'Scholar AI University',
-            research_field: 'Computer Science',
-            role: 'student',
-            subscription_tier: 'premium',
-            subscription_status: 'active'
-          };
-          setProfile(mockProfile);
-        }
+        setError(err.message);
       } finally {
         console.log('🔍 Setting loading to false in finally block');
         setLoading(false);
@@ -116,26 +56,15 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🧪 Auth state change:', event, session?.user?.email);
+        console.log('🔐 Auth state change:', event, session?.user?.email);
 
         if (session?.user) {
           setUser(session.user);
           try {
             await loadUserProfile(session.user.id);
           } catch (profileError) {
-            // Create mock profile for development
-            if (import.meta.env.VITE_APP_ENV === 'development') {
-              const mockProfile = {
-                id: session.user.id,
-                user_id: session.user.id,
-                email: session.user.email,
-                full_name: session.user.user_metadata?.full_name || 'Test User',
-                role: session.user.user_metadata?.role || 'student',
-                subscription_tier: 'premium',
-                subscription_status: 'active'
-              };
-              setProfile(mockProfile);
-            }
+            console.error('Failed to load user profile:', profileError);
+            setError('Failed to load user profile');
           }
         } else {
           setUser(null);
@@ -210,25 +139,12 @@ export const AuthProvider = ({ children }) => {
       if (data?.user) {
         setUser(data.user);
 
-        // Load or create user profile
+        // Load user profile
         try {
           await loadUserProfile(data.user.id);
         } catch (profileError) {
-          // If profile doesn't exist, create a mock one for development
-          if (import.meta.env.VITE_APP_ENV === 'development') {
-            const mockProfile = {
-              id: data.user.id,
-              user_id: data.user.id,
-              email: data.user.email,
-              full_name: data.user.user_metadata?.full_name || 'Test User',
-              role: data.user.user_metadata?.role || 'student',
-              institution: data.user.user_metadata?.institution || 'Test University',
-              department: data.user.user_metadata?.department || 'Computer Science',
-              subscription_tier: 'free',
-              subscription_status: 'active'
-            };
-            setProfile(mockProfile);
-          }
+          console.error('Failed to load user profile after login:', profileError);
+          setError('Failed to load user profile');
         }
       }
 

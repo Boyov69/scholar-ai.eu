@@ -112,17 +112,17 @@ const Header = () => {
 
               <button
                 onClick={() => {
-                  console.log('Desktop nav: Workspace clicked');
-                  navigate('/workspace');
+                  console.log('Desktop nav: Workspaces clicked');
+                  navigate('/workspaces');
                 }}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
-                  isActivePath('/workspace')
+                  isActivePath('/workspaces') || isActivePath('/workspace')
                     ? 'bg-primary/20 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
                 <Users className="h-4 w-4" />
-                <span>Workspace</span>
+                <span>Workspaces</span>
               </button>
             </nav>
           )}
@@ -274,13 +274,13 @@ const Header = () => {
 
                       <DropdownMenuItem
                         onClick={() => {
-                          console.log('Mobile nav: Workspace clicked');
-                          navigate('/workspace');
+                          console.log('Mobile nav: Workspaces clicked');
+                          navigate('/workspaces');
                         }}
                         className="cursor-pointer"
                       >
                         <Users className="mr-2 h-4 w-4" />
-                        <span>Workspace</span>
+                        <span>Workspaces</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
