@@ -396,7 +396,7 @@ export const db = {
       const workspacesPromise = supabase
         .from('workspaces')
         .select('*')
-        .eq('user_id', userId)
+        .eq('owner_id', userId)
         .order('created_at', { ascending: false });
 
       const timeoutPromise = new Promise((_, reject) => {
@@ -418,7 +418,7 @@ export const db = {
           id: `demo-workspace-${Date.now()}`,
           name: 'Demo Workspace',
           description: 'Your first workspace for collaborative research (demo mode)',
-          user_id: userId,
+          owner_id: userId,
           color_theme: '#10B981',
           visibility: 'private',
           created_at: new Date().toISOString(),
@@ -492,7 +492,7 @@ export const workspaces = {
       const { data, error } = await supabase
         .from('workspaces')
         .select('*')
-        .eq('user_id', userId)
+        .eq('owner_id', userId)
         .order('created_at', { ascending: false });
       if (error) {
         console.error('❌ Error loading workspaces:', error);
