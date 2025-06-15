@@ -70,7 +70,7 @@ const ResearchQueryForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!title.trim() || !queryText.trim() || selectedAgents.length === 0) {
       return;
     }
@@ -279,6 +279,7 @@ const ResearchQueryForm = ({
           <Button
             type="submit"
             disabled={!canSubmit}
+
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 py-6"
           >
             {isLoading ? (

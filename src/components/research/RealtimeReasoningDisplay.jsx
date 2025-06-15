@@ -3,32 +3,63 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { 
-  Search, 
-  Brain, 
-  BookOpen, 
-  FileText, 
-  CheckCircle, 
+import {
+  Search,
+  Brain,
+  BookOpen,
+  FileText,
+  CheckCircle,
   Clock,
   Loader2,
   Eye,
   Link,
   Target,
   Lightbulb,
-  Zap
+  Zap,
+  Database
 } from 'lucide-react';
 
-const RealtimeReasoningDisplay = ({ 
-  isActive = false, 
-  progress = 0, 
+const RealtimeReasoningDisplay = ({
+  isActive = false,
+  progress = 0,
   currentAgent = null,
-  onReasoningUpdate = null 
+  onReasoningUpdate = null,
+  realTimeUpdates = null // NEW: Real-time updates from actual research process
 }) => {
   const [reasoningSteps, setReasoningSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(null);
   const [discoveredSources, setDiscoveredSources] = useState([]);
+  const [isRealTimeMode, setIsRealTimeMode] = useState(false);
 
-  // Simulate real-time reasoning updates
+  // Listen for real-time updates from research process
+  useEffect(() => {
+    if (realTimeUpdates) {
+      console.log('🧠 Real-time update received:', realTimeUpdates);
+
+      const newStep = {
+        id: `real-${Date.now()}`,
+        agent: realTimeUpdates.agent || 'system',
+        type: realTimeUpdates.type || 'update',
+        message: realTimeUpdates.message,
+        details: realTimeUpdates.details,
+        timestamp: Date.now(),
+        icon: getIconForType(realTimeUpdates.type),
+        color: getColorForAgent(realTimeUpdates.agent),
+        sources: realTimeUpdates.sources
+      };
+
+      setReasoningSteps(prev => [...prev, newStep]);
+      setCurrentStep(newStep);
+
+      if (realTimeUpdates.sources) {
+        setDiscoveredSources(prev => [...prev, ...realTimeUpdates.sources]);
+      }
+
+      setIsRealTimeMode(true);
+    }
+  }, [realTimeUpdates]);
+
+  // Fallback to simulated reasoning if no real-time updates
   useEffect(() => {
     let interval = null;
 
@@ -37,10 +68,16 @@ const RealtimeReasoningDisplay = ({
       setReasoningSteps([]);
       setCurrentStep(null);
       setDiscoveredSources([]);
+      setIsRealTimeMode(false);
       return;
     }
 
-    // Reset state when starting
+    // If we have real-time updates, don't use simulation
+    if (isRealTimeMode) {
+      return;
+    }
+
+    // Reset state when starting simulation
     setReasoningSteps([]);
     setCurrentStep(null);
     setDiscoveredSources([]);
@@ -124,6 +161,45 @@ const RealtimeReasoningDisplay = ({
         timestamp: Date.now() + 9500,
         icon: Lightbulb,
         color: 'orange'
+      },
+      {
+        id: 9,
+        agent: 'owl',
+        type: 'database_save',
+        message: 'Saving citations to database...',
+        timestamp: Date.now() + 11000,
+        icon: Database,
+        color: 'purple',
+        details: 'Storing research results and citations'
+      },
+      {
+        id: 10,
+        agent: 'falcon',
+        type: 'quality_check',
+        message: 'Performing final quality assurance...',
+        timestamp: Date.now() + 12500,
+        icon: CheckCircle,
+        color: 'green',
+        details: 'Verifying completeness and accuracy'
+      },
+      {
+        id: 11,
+        agent: 'crow',
+        type: 'finalization',
+        message: 'Preparing results for presentation...',
+        timestamp: Date.now() + 14000,
+        icon: FileText,
+        color: 'blue'
+      },
+      {
+        id: 12,
+        agent: 'phoenix',
+        type: 'completion',
+        message: 'Research analysis completed successfully!',
+        timestamp: Date.now() + 15500,
+        icon: CheckCircle,
+        color: 'orange',
+        details: 'All results processed and ready for review'
       }
     ];
 
@@ -176,14 +252,45 @@ const RealtimeReasoningDisplay = ({
           onReasoningUpdate({ type: 'complete', message: 'Research reasoning completed' });
         }
       }
-    }, 800); // 🚀 FASTER: Quicker updates to show all steps before API completes
+    }, 1200); // 🚀 ADJUSTED: Slower timing to match actual processing time
 
     return () => {
       if (interval) {
         clearInterval(interval);
       }
     };
-  }, [isActive, onReasoningUpdate]);
+  }, [isActive, onReasoningUpdate, isRealTimeMode]);
+
+  // Helper functions for dynamic reasoning
+  const getIconForType = (type) => {
+    const iconMap = {
+      'search_init': Search,
+      'query_analysis': Brain,
+      'database_search': Database,
+      'source_discovery': BookOpen,
+      'url_fetch': Link,
+      'content_analysis': Eye,
+      'synthesis': Target,
+      'citation_format': FileText,
+      'quality_check': CheckCircle,
+      'gap_analysis': Lightbulb,
+      'completion': CheckCircle,
+      'error': Clock,
+      'progress': Loader2
+    };
+    return iconMap[type] || Search;
+  };
+
+  const getColorForAgent = (agent) => {
+    const colorMap = {
+      'crow': 'blue',
+      'falcon': 'green',
+      'owl': 'purple',
+      'phoenix': 'orange',
+      'system': 'gray'
+    };
+    return colorMap[agent] || 'blue';
+  };
 
   const getAgentInfo = (agentName) => {
     const agents = {
@@ -197,12 +304,13 @@ const RealtimeReasoningDisplay = ({
 
   const getColorClasses = (color) => {
     const colors = {
-      blue: 'bg-blue-50 border-blue-200 text-blue-900',
-      green: 'bg-green-50 border-green-200 text-green-900',
-      purple: 'bg-purple-50 border-purple-200 text-purple-900',
-      orange: 'bg-orange-50 border-orange-200 text-orange-900'
+      blue: 'bg-blue-900/30 border-blue-400/50 text-blue-50',
+      green: 'bg-green-900/30 border-green-400/50 text-green-50',
+      purple: 'bg-purple-900/30 border-purple-400/50 text-purple-50',
+      orange: 'bg-orange-900/30 border-orange-400/50 text-orange-50',
+      gray: 'bg-gray-900/30 border-gray-400/50 text-gray-50'
     };
-    return colors[color] || 'bg-gray-50 border-gray-200 text-gray-900';
+    return colors[color] || 'bg-gray-900/30 border-gray-400/50 text-gray-50';
   };
 
   if (!isActive) {
@@ -212,18 +320,18 @@ const RealtimeReasoningDisplay = ({
   return (
     <div className="space-y-4">
       {/* Real-time Reasoning Feed */}
-      <Card className="glass-strong">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-yellow-400" />
+      <Card className="glass-strong border-white/20 bg-black/40 backdrop-blur-xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-white font-bold">
+            <Zap className="h-5 w-5 text-yellow-400 drop-shadow-sm" />
             Real-time Research Reasoning
-            <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+            <Badge variant="outline" className="bg-yellow-500/30 text-yellow-200 border-yellow-400/50 font-semibold">
               LIVE
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
+          <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
             <AnimatePresence>
               {reasoningSteps.map((step) => {
                 const agent = getAgentInfo(step.agent);
@@ -238,21 +346,21 @@ const RealtimeReasoningDisplay = ({
                     className={`p-3 rounded-lg border ${getColorClasses(step.color)}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        <IconComponent className="h-4 w-4 mt-0.5" />
+                      <div className="flex-shrink-0 p-1.5 rounded-full bg-white/10 backdrop-blur-sm">
+                        <IconComponent className="h-4 w-4 text-white drop-shadow-sm" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className={`text-xs border-${step.color}-300/60 text-${step.color}-100 bg-${step.color}-500/10`}>
                             {agent.name}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-white/80 font-medium">
                             {new Date(step.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
-                        <p className="text-sm font-medium">{step.message}</p>
+                        <p className="text-sm font-semibold text-white drop-shadow-sm">{step.message}</p>
                         {step.details && (
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-white/90 mt-1 font-medium">
                             {step.details}
                           </p>
                         )}
@@ -271,10 +379,10 @@ const RealtimeReasoningDisplay = ({
 
       {/* Live Source Discovery */}
       {discoveredSources.length > 0 && (
-        <Card className="glass">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <BookOpen className="h-4 w-4 text-blue-400" />
+        <Card className="glass border-white/20 bg-black/30 backdrop-blur-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm text-white font-bold">
+              <BookOpen className="h-4 w-4 text-blue-400 drop-shadow-sm" />
               Sources Discovered ({discoveredSources.length})
             </CardTitle>
           </CardHeader>
@@ -285,13 +393,13 @@ const RealtimeReasoningDisplay = ({
                   key={idx}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-200"
+                  className="flex items-center justify-between p-3 bg-blue-900/30 rounded-lg border border-blue-400/50 backdrop-blur-sm"
                 >
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-900">
+                    <p className="text-sm font-semibold text-blue-50 drop-shadow-sm">
                       {source.title}
                     </p>
-                    <p className="text-xs text-blue-700">
+                    <p className="text-xs text-blue-100 font-medium">
                       {source.year} • Relevance: {(source.relevance * 100).toFixed(0)}%
                     </p>
                   </div>
@@ -304,7 +412,7 @@ const RealtimeReasoningDisplay = ({
                 </motion.div>
               ))}
               {discoveredSources.length > 3 && (
-                <p className="text-xs text-muted-foreground text-center">
+                <p className="text-xs text-white/60 text-center">
                   +{discoveredSources.length - 3} more sources found...
                 </p>
               )}

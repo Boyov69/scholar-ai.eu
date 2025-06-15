@@ -151,7 +151,7 @@ export const CitationCard = ({ citation, onDelete, onUpdate }) => {
             >
               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -160,7 +160,7 @@ export const CitationCard = ({ citation, onDelete, onUpdate }) => {
             >
               <Edit3 className="h-4 w-4" />
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -169,7 +169,7 @@ export const CitationCard = ({ citation, onDelete, onUpdate }) => {
             >
               <Copy className="h-4 w-4" />
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -254,7 +254,7 @@ export const CitationCard = ({ citation, onDelete, onUpdate }) => {
                   <div><strong>Pages:</strong> {citation.pages || 'N/A'}</div>
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Identifiers</h4>
                 <div className="space-y-1 text-sm text-gray-600">

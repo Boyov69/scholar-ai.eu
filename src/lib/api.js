@@ -93,10 +93,16 @@ class APIClient {
 
   async getSubscriptionStatus() {
     // 🚧 DEVELOPMENT MODE: Return mock subscription data
-    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
+    const isDevelopment = import.meta.env.DEV ||
+                         import.meta.env.VITE_DEV_MODE === 'true' ||
+                         window.location.hostname === 'localhost' ||
+                         window.location.hostname.includes('127.0.0.1');
 
-    if (isDevelopment) {
-      console.log('🚧 Development mode: Using mock subscription status');
+    // Also check for explicit mock mode in production
+    const shouldMock = isDevelopment || import.meta.env.VITE_MOCK_PAYMENTS === 'true';
+
+    if (shouldMock) {
+      console.log('🚧 Mock mode: Using mock subscription status');
       return {
         status: 'active',
         tier: 'premium',

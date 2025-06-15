@@ -33,6 +33,7 @@ import { futureHouseClient, researchUtils } from '../../lib/futurehouse';
 import { db } from '../../lib/supabase';
 import { citationFormats } from '../../lib/config';
 import RealtimeReasoningDisplay from '../research/RealtimeReasoningDisplay';
+import ResearchQueryForm from '../research/ResearchQueryForm';
 
 // Extract keywords from research question
 const extractKeywords = (question) => {
@@ -213,6 +214,25 @@ const ResearchPage = () => {
     console.log('🧠 Reasoning update:', step);
   };
 
+  // Handler for new ResearchQueryForm
+  const handleNewQuerySubmit = async (queryData) => {
+    console.log('🔍 New query submitted:', queryData);
+    console.log('🔍 Current loading state:', loading);
+
+    // Convert new form data to old format
+    setQueryForm({
+      question: queryData.query_text,
+      researchArea: queryData.research_area || '',
+      maxResults: 50,
+      dateRange: '',
+      citationStyle: queryData.citation_style || 'apa',
+      synthesisType: 'comprehensive'
+    });
+
+    // Submit the query
+    await submitQuery();
+  };
+
   const validateQuery = () => {
     if (!queryForm.question.trim()) {
       setError('Please enter a research question');
@@ -249,7 +269,7 @@ const ResearchPage = () => {
       const queryData = {
         user_id: user.id,
         query: cleanQuestion, // Required field
-        agent_type: 'crow', // 🔧 FIXED: Use valid agent_type (crow, falcon, owl, phoenix)
+        agent_type: queryForm.agentType || 'crow', // Dynamic agent type from form, fallback to crow
         title: cleanQuestion.substring(0, 100),
         question: cleanQuestion,
         research_area: queryForm.researchArea?.trim() || null,
@@ -529,6 +549,8 @@ const ResearchPage = () => {
             console.log('✅ Staying on processing tab for better UX!');
 
             // Force refresh citations page data by clearing cache
+            // TODO: Implement proper React state management instead of window global
+            // Consider using React Context or state management library
             if (window.citationsPageRefresh) {
               console.log('🔄 Triggering citations page refresh...');
               window.citationsPageRefresh();
@@ -747,153 +769,12 @@ const ResearchPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Card className="glass-strong">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5" />
-                  Submit Research Query
-                </CardTitle>
-                <CardDescription>
-                  Our AI agents will analyze literature, synthesize findings, and provide comprehensive research insights
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="question">Research Question *</Label>
-                  <Textarea
-                    id="question"
-                    placeholder="Enter your research question or topic. Be specific for better results..."
-                    value={queryForm.question}
-                    onChange={(e) => handleInputChange('question', e.target.value)}
-                    className="min-h-[100px] relative z-10 pointer-events-auto"
-                    disabled={loading}
-                    style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="researchArea">Research Area (Optional)</Label>
-                    <Input
-                      id="researchArea"
-                      placeholder="e.g., Computer Science, Biology, Psychology"
-                      value={queryForm.researchArea}
-                      onChange={(e) => handleInputChange('researchArea', e.target.value)}
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="maxResults">Max Results</Label>
-                    <Select 
-                      value={queryForm.maxResults.toString()} 
-                      onValueChange={(value) => handleInputChange('maxResults', parseInt(value))}
-                      disabled={loading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="25">25 sources</SelectItem>
-                        <SelectItem value="50">50 sources</SelectItem>
-                        <SelectItem value="100">100 sources</SelectItem>
-                        <SelectItem value="200">200 sources</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dateRange">Date Range</Label>
-                    <Select 
-                      value={queryForm.dateRange} 
-                      onValueChange={(value) => handleInputChange('dateRange', value)}
-                      disabled={loading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all_time">All time</SelectItem>
-                        <SelectItem value="last_year">Last year</SelectItem>
-                        <SelectItem value="last_5_years">Last 5 years</SelectItem>
-                        <SelectItem value="last_10_years">Last 10 years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="citationStyle">Citation Style</Label>
-                    <Select 
-                      value={queryForm.citationStyle} 
-                      onValueChange={(value) => handleInputChange('citationStyle', value)}
-                      disabled={loading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="apa">APA</SelectItem>
-                        <SelectItem value="mla">MLA</SelectItem>
-                        <SelectItem value="chicago">Chicago</SelectItem>
-                        <SelectItem value="harvard">Harvard</SelectItem>
-                        <SelectItem value="ieee">IEEE</SelectItem>
-                        <SelectItem value="vancouver">Vancouver</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="synthesisType">Synthesis Type</Label>
-                  <Select 
-                    value={queryForm.synthesisType} 
-                    onValueChange={(value) => handleInputChange('synthesisType', value)}
-                    disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="comprehensive">Comprehensive Analysis</SelectItem>
-                      <SelectItem value="summary">Quick Summary</SelectItem>
-                      <SelectItem value="comparative">Comparative Analysis</SelectItem>
-                      <SelectItem value="methodological">Methodological Review</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex justify-between items-center pt-4 border-t border-border/50">
-                  <div className="text-sm text-muted-foreground">
-                    This query will use: Crow, Falcon, Owl, and Phoenix AI agents
-                  </div>
-                  <div className="flex gap-2">
-                    {loading && (
-                      <Button
-                        onClick={resetForm}
-                        variant="outline"
-                        size="lg"
-                        className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-                      >
-                        Reset
-                      </Button>
-                    )}
-                    <Button
-                      onClick={submitQuery}
-                      disabled={loading || !queryForm.question.trim()}
-                      className="ice-gradient hover:opacity-90"
-                      size="lg"
-                    >
-                      {loading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Zap className="mr-2 h-4 w-4" />
-                      )}
-                      Start Research
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ResearchQueryForm
+              onSubmit={handleNewQuerySubmit}
+              isLoading={loading}
+              subscription={{ tier: 'premium' }}
+              selectedAgents={['crow', 'falcon', 'owl', 'phoenix']}
+            />
           </motion.div>
         )}
 

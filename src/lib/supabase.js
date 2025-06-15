@@ -198,14 +198,16 @@ export const db = {
     try {
       console.log('✅ getUserResearchQueries for user:', userId);
 
-      // In development mode, return mock data
+      // First check window storage for recent queries
+      if (window.recentQueries && window.recentQueries.length > 0) {
+        console.log('💾 Found queries in window storage:', window.recentQueries.length, 'queries');
+        return { data: window.recentQueries, error: null };
+      }
+
+      // In development mode, return empty array but still try database
       if (isDevelopmentMode) {
-        console.log('🚧 Development mode: Returning mock research queries');
-        return {
-          data: [],
-          error: null,
-          message: 'Development mode - no queries yet'
-        };
+        console.log('🚧 Development mode: Checking database for queries...');
+        // Still try database in case queries were saved
       }
 
       // Production mode: query database
@@ -253,10 +255,67 @@ export const db = {
       // In development mode, return mock data
       if (isDevelopmentMode) {
         console.log('🚧 Development mode: Returning mock citations');
+        const mockCitations = [
+          {
+            id: `mock-citation-${Date.now()}-1`,
+            user_id: userId,
+            title: 'Artificial Intelligence in Academic Research: A Comprehensive Review',
+            authors: ['Dr. Sarah Johnson', 'Prof. Michael Chen', 'Dr. Emily Rodriguez'],
+            journal: 'Journal of Advanced AI Research',
+            year: 2024,
+            doi: '10.1000/mock.ai.research.2024.001',
+            url: 'https://example.com/ai-research-paper-1',
+            abstract: 'This comprehensive review examines the latest developments in AI research methodologies. Our analysis covers recent advances in machine learning, natural language processing, and computer vision applications in academic research.',
+            tags: ['AI', 'Machine Learning', 'Research Methodology'],
+            created_at: new Date().toISOString(),
+            metadata: {
+              source_type: 'mock_development',
+              citation_style: 'apa',
+              relevance_score: 0.95
+            }
+          },
+          {
+            id: `mock-citation-${Date.now()}-2`,
+            user_id: userId,
+            title: 'Machine Learning Applications in Citation Management Systems',
+            authors: ['Prof. David Kim', 'Dr. Lisa Wang'],
+            journal: 'Digital Library Science Quarterly',
+            year: 2024,
+            doi: '10.1000/mock.citation.management.2024.002',
+            url: 'https://example.com/citation-management-paper',
+            abstract: 'This paper explores the integration of machine learning techniques in modern citation management systems, focusing on automated citation extraction and formatting.',
+            tags: ['Citation Management', 'Machine Learning', 'Digital Libraries'],
+            created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+            metadata: {
+              source_type: 'mock_development',
+              citation_style: 'apa',
+              relevance_score: 0.88
+            }
+          },
+          {
+            id: `mock-citation-${Date.now()}-3`,
+            user_id: userId,
+            title: 'Future Directions in Collaborative Research Platforms',
+            authors: ['Dr. Anna Petrov', 'Prof. Robert Martinez', 'Dr. James Thompson'],
+            journal: 'Future Research Trends',
+            year: 2023,
+            doi: '10.1000/mock.collaborative.research.2023.003',
+            url: 'https://example.com/collaborative-research-paper',
+            abstract: 'This forward-looking analysis identifies emerging trends in collaborative research platforms and their impact on academic productivity and knowledge sharing.',
+            tags: ['Collaboration', 'Research Platforms', 'Academic Productivity'],
+            created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+            metadata: {
+              source_type: 'mock_development',
+              citation_style: 'apa',
+              relevance_score: 0.82
+            }
+          }
+        ];
+
         return {
-          data: [],
+          data: mockCitations,
           error: null,
-          message: 'Development mode - no citations yet'
+          message: 'Development mode - mock citations provided'
         };
       }
 
@@ -297,7 +356,29 @@ export const db = {
 
   createMultipleCitations: async (citationsArray) => {
     try {
-      console.log('✅ Real createMultipleCitations:', citationsArray.length, 'citations');
+      console.log('✅ createMultipleCitations:', citationsArray.length, 'citations');
+
+      // In development mode, simulate successful save
+      if (isDevelopmentMode) {
+        console.log('🚧 Development mode: Simulating citation save');
+        const mockSavedCitations = citationsArray.map((citation, index) => ({
+          ...citation,
+          id: `mock-saved-${Date.now()}-${index}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+
+        // Store in window for immediate access
+        if (!window.recentCitations) {
+          window.recentCitations = [];
+        }
+        window.recentCitations.push(...mockSavedCitations);
+
+        console.log('✅ Mock citations saved successfully:', mockSavedCitations.length);
+        return { data: mockSavedCitations, error: null };
+      }
+
+      // Production mode: save to database
       const { data, error } = await supabase
         .from('citations')
         .insert(citationsArray)

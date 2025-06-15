@@ -8,6 +8,30 @@
 
 :root {
   --radius: 0.625rem;
+  /* Light mode colors (default) */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 217.2 91.2% 59.8%;
+}
+
+.dark {
+  /* Dark mode colors */
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
   --card: 222.2 84% 4.9%;
@@ -35,9 +59,19 @@
   }
   body {
     @apply bg-background text-foreground min-h-screen;
-    background: linear-gradient(135deg, 
-      hsl(222.2 84% 4.9%) 0%, 
-      hsl(217.2 32.6% 17.5%) 50%, 
+    /* Light mode gradient */
+    background: linear-gradient(135deg,
+      hsl(0 0% 100%) 0%,
+      hsl(210 40% 96%) 50%,
+      hsl(0 0% 100%) 100%);
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    /* Dark mode gradient */
+    background: linear-gradient(135deg,
+      hsl(222.2 84% 4.9%) 0%,
+      hsl(217.2 32.6% 17.5%) 50%,
       hsl(222.2 84% 4.9%) 100%);
     background-attachment: fixed;
   }

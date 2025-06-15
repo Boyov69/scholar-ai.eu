@@ -51,6 +51,11 @@ coverage/
 *.tmp
 *.temp
 
+# Security - Local config files with sensitive data
+cursor-mcp-config.json
+cursor-mcp-settings.json
+deploy-to-production.js
+
 # Vercel
 .vercel/
 
