@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { HelmetProvider } from 'react-helmet-async';
@@ -12,21 +12,23 @@ import { fixInputInteraction, setupInputFixObserver } from './utils/inputFix';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 
-// Page components
+// Page components - Critical pages loaded immediately
 import LandingPage from './components/pages/LandingPage';
-import Dashboard from './components/pages/Dashboard';
-import ResearchPage from './components/pages/ResearchPage';
-import EnhancedResearchPage from './components/pages/EnhancedResearchPage';
-import CitationsPage from './components/pages/CitationsPage';
-import WorkspacePage from './components/pages/WorkspacePage';
-import SettingsPage from './components/pages/SettingsPage';
-import PricingPage from './components/pages/PricingPage';
 import AuthPage from './components/pages/AuthPage';
-import PrivacyPolicy from './components/pages/PrivacyPolicy';
-import CookiePolicy from './components/pages/CookiePolicy';
 
-// Import new state-of-the-art workspace components
-import { WorkspaceDashboard } from './components/workspace/WorkspaceDashboard';
+// 🚀 PERFORMANCE: Lazy load heavy pages for better LCP
+const Dashboard = lazy(() => import('./components/pages/Dashboard'));
+const ResearchPage = lazy(() => import('./components/pages/ResearchPage'));
+const EnhancedResearchPage = lazy(() => import('./components/pages/EnhancedResearchPage'));
+const CitationsPage = lazy(() => import('./components/pages/CitationsPage'));
+const WorkspacePage = lazy(() => import('./components/pages/WorkspacePage'));
+const SettingsPage = lazy(() => import('./components/pages/SettingsPage'));
+const PricingPage = lazy(() => import('./components/pages/PricingPage'));
+const PrivacyPolicy = lazy(() => import('./components/pages/PrivacyPolicy'));
+const CookiePolicy = lazy(() => import('./components/pages/CookiePolicy'));
+
+// 🚀 PERFORMANCE: Lazy load workspace components
+const WorkspaceDashboard = lazy(() => import('./components/workspace/WorkspaceDashboard').then(module => ({ default: module.WorkspaceDashboard })));
 
 // Context providers
 import { AuthProvider } from './hooks/useAuth';
@@ -41,6 +43,13 @@ import DevLoginButton from './components/DevLoginButton';
 
 // Production configuration
 import './lib/production.js';
+
+// 🚀 PERFORMANCE: Fast loading component for lazy routes
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 function App() {
   // Fix input interaction issues on mount
@@ -69,20 +78,22 @@ function App() {
               <div className="min-h-screen flex flex-col">
                 <Header />
                 <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/pricing" element={<PricingPage />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/research" element={<ResearchPage />} />
-                    <Route path="/research/enhanced" element={<EnhancedResearchPage />} />
-                    <Route path="/citations" element={<CitationsPage />} />
-                    <Route path="/workspaces" element={<WorkspaceDashboard />} />
-                    <Route path="/workspace/:id?" element={<WorkspacePage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/cookie-policy" element={<CookiePolicy />} />
-                  </Routes>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/research" element={<ResearchPage />} />
+                      <Route path="/research/enhanced" element={<EnhancedResearchPage />} />
+                      <Route path="/citations" element={<CitationsPage />} />
+                      <Route path="/workspaces" element={<WorkspaceDashboard />} />
+                      <Route path="/workspace/:id?" element={<WorkspacePage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                      <Route path="/cookie-policy" element={<CookiePolicy />} />
+                    </Routes>
+                  </Suspense>
                 </main>
                 <Footer />
                 <ScholarAICookieConsent />

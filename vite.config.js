@@ -18,6 +18,19 @@ export default defineConfig({
     port: 5173,
     host: true, // Allow external connections
     open: false, // Don't auto-open browser
+    proxy: {
+      // Proxy Supabase functions to avoid CORS issues in development
+      '/functions': {
+        target: 'https://xicjnnzzykdhbmrpafhs.supabase.co',
+        changeOrigin: true,
+        secure: true,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        }
+      }
+    }
   },
   build: {
     outDir: 'dist',

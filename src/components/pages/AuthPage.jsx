@@ -276,46 +276,7 @@ const AuthPage = () => {
                         Sign In
                       </Button>
 
-                      {/* Development Mode Quick Login */}
-                      {import.meta.env.VITE_APP_ENV === 'development' && (
-                        <div className="mt-4 pt-4 border-t border-border">
-                          <p className="text-xs text-muted-foreground text-center mb-3">
-                            🧪 Development Mode - Quick Login
-                          </p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  email: 'student@localhost.dev',
-                                  password: 'test123'
-                                }));
-                              }}
-                              className="text-xs"
-                            >
-                              Student
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  email: 'researcher@localhost.dev',
-                                  password: 'test123'
-                                }));
-                              }}
-                              className="text-xs"
-                            >
-                              Researcher
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+
                     </TabsContent>
 
                     <TabsContent value="signup" className="space-y-4 mt-0">

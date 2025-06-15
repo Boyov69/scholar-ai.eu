@@ -27,6 +27,12 @@ NODE_ENV=production
 VITE_FUTUREHOUSE_API_KEY=your-futurehouse-api-key
 ```
 
+### **5. OpenAI API (SECURE - Server-side only)**
+```
+OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+⚠️ **CRITICAL**: Never use `VITE_OPENAI_API_KEY` - this would expose your key to the browser!
+
 ---
 
 ## 📝 **HOW TO SET UP IN VERCEL:**

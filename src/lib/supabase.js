@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Production mode - no mocking
-const isDevelopmentMode = false;
+// Development mode detection
+const isDevelopmentMode = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 
 // Get the correct base URL for redirects
 const getBaseUrl = () => {
@@ -152,110 +152,77 @@ export const db = {
   // Research queries with RLS
   createResearchQuery: async (queryData) => {
     try {
-      console.log('✅ Real createResearchQuery:', queryData);
-      
+      console.log('✅ createResearchQuery:', queryData);
+
       if (!queryData.user_id || !queryData.query || !queryData.agent_type) {
-        const error = new Error('Missing required fields');
+        const error = new Error('Missing required fields: user_id, query, agent_type');
         console.error('❌ Validation error:', error);
         return { data: null, error };
       }
 
-      const minimalData = {
-        user_id: queryData.user_id,
-        query: queryData.query,
-        agent_type: queryData.agent_type
-      };
-
-      console.log('🔍 Starting minimal insert with 3s timeout...');
-      const minimalInsertPromise = supabase
-        .from('research_queries')
-        .insert([minimalData])
-        .select()
-        .single();
-
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Minimal insert timeout after 3 seconds')), 3000);
-      });
-
-      try {
-        const { data: minimalResult, error: minimalError } = await Promise.race([
-          minimalInsertPromise,
-          timeoutPromise
-        ]);
-
-        if (minimalError) {
-          console.error('❌ Minimal insert failed:', minimalError);
-          throw minimalError;
-        }
-
-        console.log('✅ Minimal insert succeeded:', minimalResult);
-        return { data: minimalResult, error: null };
-      } catch (timeoutError) {
-        console.log('⚠️ Research query creation timed out, using window storage fallback');
-
-        // Create fallback query with full data
-        const fallbackQuery = {
-          id: `query-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      // In development mode, use mock data to avoid database issues
+      if (isDevelopmentMode) {
+        console.log('🚧 Development mode: Creating mock research query');
+        const mockQuery = {
+          id: `mock-query-${Date.now()}`,
           ...queryData,
           status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-
-        // Store in window storage for immediate access
-        if (!window.recentQueries) {
-          window.recentQueries = [];
-        }
-        window.recentQueries.unshift(fallbackQuery);
-        console.log('💾 Stored research query in window storage for immediate access');
-
-        return { data: fallbackQuery, error: null };
+        return { data: mockQuery, error: null };
       }
+
+      // Production mode: try database insert
+      const { data, error } = await supabase
+        .from('research_queries')
+        .insert([queryData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Database error:', error);
+        return { data: null, error };
+      }
+
+      console.log('✅ Research query created successfully');
+      return { data, error: null };
 
     } catch (error) {
       console.error('❌ Create research query exception:', error);
-      return { data: null, error }
+      return { data: null, error };
     }
   },
 
   getUserResearchQueries: async (userId, limit = 50) => {
     try {
-      console.log('✅ Real getUserResearchQueries for user:', userId);
+      console.log('✅ getUserResearchQueries for user:', userId);
 
-      // Check window storage first
-      if (window.recentQueries && window.recentQueries.length > 0) {
-        console.log('💾 Found queries in window storage:', window.recentQueries.length, 'queries');
-        return { data: window.recentQueries, error: null };
+      // In development mode, return mock data
+      if (isDevelopmentMode) {
+        console.log('🚧 Development mode: Returning mock research queries');
+        return {
+          data: [],
+          error: null,
+          message: 'Development mode - no queries yet'
+        };
       }
 
-      // Fallback to database with timeout
-      const queriesPromise = supabase
+      // Production mode: query database
+      const { data, error } = await supabase
         .from('research_queries')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Research queries timeout after 10 seconds')), 10000);
-      });
-
-      try {
-        const { data, error } = await Promise.race([queriesPromise, timeoutPromise]);
-        if (error) {
-          console.error('❌ Error loading research queries:', error);
-          return { data: [], error };
-        }
-        console.log('✅ Research queries loaded:', data?.length || 0, 'queries');
-        return { data: data || [], error: null };
-      } catch (timeoutError) {
-        console.warn('⚠️ Research queries timed out, using fallback:', timeoutError.message);
-        return {
-          data: [],
-          error: null,
-          message: 'Database temporarily slow - using cached data'
-        };
+      if (error) {
+        console.error('❌ Error loading research queries:', error);
+        return { data: [], error };
       }
+
+      console.log('✅ Research queries loaded:', data?.length || 0, 'queries');
+      return { data: data || [], error: null };
     } catch (error) {
       console.error('Get user research queries error:', error);
       return { data: [], error };
@@ -281,38 +248,33 @@ export const db = {
   // Citations with security
   getUserCitations: async (userId, limit = 100) => {
     try {
-      console.log('✅ Real getUserCitations for user:', userId);
+      console.log('✅ getUserCitations for user:', userId);
 
-      // First check window storage for recent citations
-      if (window.recentCitations && window.recentCitations.length > 0) {
-        console.log('💾 Found citations in window storage:', window.recentCitations.length, 'citations');
-        return { data: window.recentCitations, error: null };
+      // In development mode, return mock data
+      if (isDevelopmentMode) {
+        console.log('🚧 Development mode: Returning mock citations');
+        return {
+          data: [],
+          error: null,
+          message: 'Development mode - no citations yet'
+        };
       }
 
-      // Fallback to database with timeout
-      const citationsPromise = supabase
+      // Production mode: query database
+      const { data, error } = await supabase
         .from('citations')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Citations query timeout after 15 seconds')), 15000);
-      });
-
-      try {
-        const { data, error } = await Promise.race([citationsPromise, timeoutPromise]);
-        if (error) {
-          console.error('❌ Error loading real citations:', error);
-          return { data: [], error };
-        }
-        console.log('✅ Real citations loaded:', data?.length || 0, 'citations');
-        return { data: data || [], error: null };
-      } catch (timeoutError) {
-        console.error('❌ Citations query timed out:', timeoutError);
-        return { data: [], error: null };
+      if (error) {
+        console.error('❌ Error loading citations:', error);
+        return { data: [], error };
       }
+
+      console.log('✅ Citations loaded:', data?.length || 0, 'citations');
+      return { data: data || [], error: null };
     } catch (error) {
       console.error('Get user citations error:', error);
       return { data: [], error };
@@ -384,40 +346,15 @@ export const db = {
   // Workspace functions in db object
   getUserWorkspaces: async (userId) => {
     try {
-      console.log('✅ Real getUserWorkspaces for user:', userId);
+      console.log('✅ getUserWorkspaces for user:', userId);
 
-      // Check window storage first
-      if (window.recentWorkspaces && window.recentWorkspaces.length > 0) {
-        console.log('💾 Found workspaces in window storage:', window.recentWorkspaces.length, 'workspaces');
-        return { data: window.recentWorkspaces, error: null };
-      }
-
-      // Fallback to database with timeout
-      const workspacesPromise = supabase
-        .from('workspaces')
-        .select('*')
-        .eq('owner_id', userId)
-        .order('created_at', { ascending: false });
-
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Workspaces query timeout after 10 seconds')), 10000);
-      });
-
-      try {
-        const { data, error } = await Promise.race([workspacesPromise, timeoutPromise]);
-        if (error) {
-          console.error('❌ Error loading workspaces:', error);
-          return { data: [], error };
-        }
-        console.log('✅ Workspaces loaded:', data?.length || 0, 'workspaces');
-        return { data: data || [], error: null };
-      } catch (timeoutError) {
-        console.warn('⚠️ Workspaces query timed out, providing demo workspace:', timeoutError.message);
-        // Return mock workspace for demo
+      // In development mode, return mock workspace
+      if (isDevelopmentMode) {
+        console.log('🚧 Development mode: Returning mock workspace');
         const mockWorkspace = {
           id: `demo-workspace-${Date.now()}`,
           name: 'Demo Workspace',
-          description: 'Your first workspace for collaborative research (demo mode)',
+          description: 'Your first workspace for collaborative research (development mode)',
           owner_id: userId,
           color_theme: '#10B981',
           visibility: 'private',
@@ -426,78 +363,19 @@ export const db = {
         };
         return { data: [mockWorkspace], error: null };
       }
-    } catch (error) {
-      console.error('Get user workspaces error:', error);
-      return { data: [], error };
-    }
-  },
 
-  createWorkspace: async (workspaceData) => {
-    try {
-      console.log('✅ Real createWorkspace:', workspaceData.name);
-
-      // Create workspace with ID and timestamp
-      const newWorkspace = {
-        id: `workspace-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        ...workspaceData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      // Store in window storage for immediate access
-      if (!window.recentWorkspaces) {
-        window.recentWorkspaces = [];
-      }
-      window.recentWorkspaces.unshift(newWorkspace);
-      console.log('💾 Stored workspace in window storage for immediate access');
-
-      // Try database insert with timeout
-      const insertPromise = supabase
-        .from('workspaces')
-        .insert([workspaceData])
-        .select();
-
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Workspace creation timeout after 8 seconds')), 8000);
-      });
-
-      try {
-        const { data, error } = await Promise.race([insertPromise, timeoutPromise]);
-        if (error) {
-          console.error('❌ Database error:', error);
-        } else {
-          console.log('✅ Workspace saved to database successfully');
-          // Update window storage with real database data
-          if (data && data.length > 0) {
-            window.recentWorkspaces[0] = data[0];
-          }
-        }
-      } catch (timeoutError) {
-        console.log('⚠️ Workspace creation timed out, but workspace is stored in window for immediate access');
-      }
-
-      return { data: [newWorkspace], error: null };
-    } catch (error) {
-      console.error('Create workspace error:', error);
-      return { data: null, error };
-    }
-  }
-};
-
-// Workspaces
-export const workspaces = {
-  getUserWorkspaces: async (userId) => {
-    try {
-      console.log('✅ Real getUserWorkspaces for user:', userId);
+      // Production mode: query database
       const { data, error } = await supabase
         .from('workspaces')
         .select('*')
         .eq('owner_id', userId)
         .order('created_at', { ascending: false });
+
       if (error) {
         console.error('❌ Error loading workspaces:', error);
         return { data: [], error };
       }
+
       console.log('✅ Workspaces loaded:', data?.length || 0, 'workspaces');
       return { data: data || [], error: null };
     } catch (error) {
@@ -508,16 +386,32 @@ export const workspaces = {
 
   createWorkspace: async (workspaceData) => {
     try {
-      console.log('✅ Real createWorkspace:', workspaceData.name);
+      console.log('✅ createWorkspace:', workspaceData.name);
+
+      // In development mode, create mock workspace
+      if (isDevelopmentMode) {
+        console.log('🚧 Development mode: Creating mock workspace');
+        const mockWorkspace = {
+          id: `mock-workspace-${Date.now()}`,
+          ...workspaceData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        return { data: [mockWorkspace], error: null };
+      }
+
+      // Production mode: insert into database
       const { data, error } = await supabase
         .from('workspaces')
         .insert([workspaceData])
         .select();
+
       if (error) {
         console.error('❌ Database error:', error);
-        throw error;
+        return { data: null, error };
       }
-      console.log('✅ Workspace saved successfully');
+
+      console.log('✅ Workspace created successfully');
       return { data, error: null };
     } catch (error) {
       console.error('Create workspace error:', error);
@@ -525,6 +419,8 @@ export const workspaces = {
     }
   }
 };
+
+// 🗑️ REMOVED: Duplicate workspace functions (already in db object above)
 
 // Users
 export const users = {
@@ -672,6 +568,5 @@ export const workspaceMembers = {
 
 export default {
   ...db,
-  ...workspaces,
   ...users
 };

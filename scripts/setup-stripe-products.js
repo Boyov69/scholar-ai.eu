@@ -15,11 +15,11 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Scholar AI subscription tiers configuration
 const subscriptionTiers = {
-  advanced_ai: {
-    name: 'Advanced AI-Powered Research Platform',
+  premium: {
+    name: 'Premium Research Platform',
     description: 'Perfect for students and early researchers',
-    monthlyPrice: 2900, // €29.00 in cents
-    yearlyPrice: 2400,  // €24.00 in cents (when billed yearly)
+    monthlyPrice: 1900, // €19.00 in cents
+    yearlyPrice: 1520,  // €15.20 in cents (when billed yearly)
     features: [
       '50 research queries/month',
       'Standard citation formats (APA, MLA, Chicago)',
@@ -28,11 +28,11 @@ const subscriptionTiers = {
       'Basic collaboration tools'
     ]
   },
-  ultra_intelligent: {
-    name: 'Ultra-Intelligent Academic Platform',
+  professional: {
+    name: 'Professional Academic Platform',
     description: 'For serious researchers and small teams',
-    monthlyPrice: 9900, // €99.00 in cents
-    yearlyPrice: 7900,  // €79.00 in cents (when billed yearly)
+    monthlyPrice: 6900, // €69.00 in cents
+    yearlyPrice: 5520,  // €55.20 in cents (when billed yearly)
     features: [
       'Unlimited research queries',
       'All citation formats + BibTeX',
@@ -43,11 +43,11 @@ const subscriptionTiers = {
       'Advanced export formats'
     ]
   },
-  phd_level: {
-    name: 'PhD-Level Academic Intelligence',
+  enterprise: {
+    name: 'Enterprise Academic Intelligence',
     description: 'Enterprise-grade research platform',
-    monthlyPrice: 29900, // €299.00 in cents
-    yearlyPrice: 24900,  // €249.00 in cents (when billed yearly)
+    monthlyPrice: 19900, // €199.00 in cents
+    yearlyPrice: 14925,  // €149.25 in cents (when billed yearly)
     features: [
       'Unlimited research queries',
       'Multi-user management dashboard',
