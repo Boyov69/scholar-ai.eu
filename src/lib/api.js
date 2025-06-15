@@ -1,15 +1,6 @@
 import { supabase } from './supabase.js';
 import { config } from './config.js';
-import {
-  mockStripeResponses,
-  mockUsageData,
-  mockResearchQueries,
-  mockCitations,
-  mockWorkspaces,
-  mockNotifications,
-  withMockData,
-  isDevelopmentMode
-} from './mockData.js';
+import { openaiClient } from './openai.js';
 
 // API client for Scholar AI backend services
 class APIClient {
@@ -55,41 +46,86 @@ class APIClient {
 
   // Stripe payment methods
   async createCheckoutSession(priceId, successUrl, cancelUrl) {
-    return withMockData(
-      () => this.request('stripe-checkout', {
-        method: 'POST',
-        body: JSON.stringify({
-          priceId,
-          successUrl,
-          cancelUrl
-        })
-      }),
-      mockStripeResponses.createCheckoutSession,
-      { useMock: true } // Always use mock data until Supabase functions are deployed
-    );
+    // 🚧 DEVELOPMENT MODE: Mock checkout session
+    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
+
+    if (isDevelopment) {
+      console.log('🚧 Development mode: Mock checkout session created');
+      // Simulate redirect to success page after short delay
+      setTimeout(() => {
+        window.location.href = successUrl;
+      }, 1000);
+      return { sessionUrl: successUrl };
+    }
+
+    // Production mode: real API call
+    return this.request('stripe-checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        priceId,
+        successUrl,
+        cancelUrl
+      })
+    });
   }
 
   async createPortalSession(returnUrl) {
-    return withMockData(
-      () => this.request('stripe-portal', {
-        method: 'POST',
-        body: JSON.stringify({
-          returnUrl
-        })
-      }),
-      mockStripeResponses.createPortalSession,
-      { useMock: true } // Always use mock data until Supabase functions are deployed
-    );
+    // 🚧 DEVELOPMENT MODE: Mock portal session
+    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
+
+    if (isDevelopment) {
+      console.log('🚧 Development mode: Mock portal session created');
+      // Simulate redirect to return URL after short delay
+      setTimeout(() => {
+        window.location.href = returnUrl;
+      }, 1000);
+      return { portalUrl: returnUrl };
+    }
+
+    // Production mode: real API call
+    return this.request('stripe-portal', {
+      method: 'POST',
+      body: JSON.stringify({
+        returnUrl
+      })
+    });
   }
 
   async getSubscriptionStatus() {
-    return withMockData(
-      () => this.request('subscription-status', {
+    // 🚧 DEVELOPMENT MODE: Return mock subscription data
+    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
+
+    if (isDevelopment) {
+      console.log('🚧 Development mode: Using mock subscription status');
+      return {
+        status: 'active',
+        tier: 'premium',
+        customerId: 'cus_mock_development',
+        subscriptionId: 'sub_mock_development',
+        currentPeriodStart: new Date().toISOString(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        cancelAtPeriodEnd: false
+      };
+    }
+
+    // Production mode: try real API call
+    try {
+      return await this.request('subscription-status', {
         method: 'GET'
-      }),
-      mockStripeResponses.subscriptionStatus,
-      { useMock: true } // Always use mock data until Supabase functions are deployed
-    );
+      });
+    } catch (error) {
+      console.warn('⚠️ Subscription status API failed, using fallback:', error.message);
+      // Fallback to free tier if API fails
+      return {
+        status: 'inactive',
+        tier: 'free',
+        customerId: null,
+        subscriptionId: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false
+      };
+    }
   }
 
   // Usage tracking methods
@@ -212,13 +248,38 @@ class APIClient {
 
   // Export methods
   async exportData(format, workspaceId = null) {
-    const endpoint = workspaceId 
+    const endpoint = workspaceId
       ? `export/${format}?workspace_id=${workspaceId}`
       : `export/${format}`;
-    
+
     return this.request(endpoint, {
       method: 'GET'
     });
+  }
+
+  // 🔒 SECURE OpenAI Integration Methods
+  async openaiResearch(query, options = {}) {
+    return openaiClient.research(query, options);
+  }
+
+  async generateSummary(text, options = {}) {
+    return openaiClient.generateSummary(text, options);
+  }
+
+  async generateResearchQuestions(topic, options = {}) {
+    return openaiClient.generateResearchQuestions(topic, options);
+  }
+
+  async analyzeResearchGaps(researchArea, existingLiterature, options = {}) {
+    return openaiClient.analyzeGaps(researchArea, existingLiterature, options);
+  }
+
+  async formatCitation(citationData, style = 'apa', options = {}) {
+    return openaiClient.formatCitation(citationData, style, options);
+  }
+
+  async checkOpenAIAccess() {
+    return openaiClient.checkAccess();
   }
 }
 
@@ -246,7 +307,14 @@ export const {
   getNotifications,
   markNotificationRead,
   getAnalytics,
-  exportData
+  exportData,
+  // 🔒 Secure OpenAI methods
+  openaiResearch,
+  generateSummary,
+  generateResearchQuestions,
+  analyzeResearchGaps,
+  formatCitation,
+  checkOpenAIAccess
 } = api;
 
 export default api;

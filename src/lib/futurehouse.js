@@ -529,6 +529,32 @@ Provide actionable insights for advancing the field.`;
     });
   }
 
+  // Helper method to extract keywords from query
+  extractKeywords(query) {
+    if (!query || typeof query !== 'string') return [];
+
+    // Simple keyword extraction - remove common words and split
+    const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should'];
+
+    return query
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove punctuation
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !commonWords.includes(word))
+      .slice(0, 5); // Take first 5 keywords
+  }
+
+  // Helper method to generate realistic citations
+  generateRealisticCitations(query, keywords) {
+    // This is a placeholder - in real implementation you'd use the keywords
+    // to generate more targeted citations
+    return [
+      `Research on ${query}: A comprehensive analysis`,
+      `Advanced studies in ${keywords[0] || 'research'} methodology`,
+      `Future directions for ${keywords[1] || 'academic'} investigation`
+    ];
+  }
+
   // 🚀 ENHANCED: Real citation generators based on research query
   getMockLiteratureResults(query) {
     // Generate realistic citations based on the actual query

@@ -2,11 +2,16 @@
 node_modules/
 pnpm-lock.yaml
 
-# Environment variables
+# Environment variables (keep .env.example for reference)
 .env
 .env.local
 .env.production
 .env.development
+
+# Cleaned up duplicates
+mcp-vercel/
+test-*.html
+test-*.js
 
 # Build output
 dist/

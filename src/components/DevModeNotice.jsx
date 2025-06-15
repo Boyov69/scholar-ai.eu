@@ -4,10 +4,8 @@ import { X, User, CreditCard, Zap } from 'lucide-react';
 const DevModeNotice = () => {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Only show in development mode
-  if (import.meta.env.VITE_APP_ENV !== 'development' || !isVisible) {
-    return null;
-  }
+  // Disabled for production
+  return null;
 
   const testUsers = [
     { email: 'student@localhost.dev', role: 'Student', tier: 'Free' },

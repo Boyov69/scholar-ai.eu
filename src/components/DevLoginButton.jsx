@@ -8,10 +8,8 @@ const DevLoginButton = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
 
-  // Only show in development mode
-  if (import.meta.env.VITE_APP_ENV !== 'development') {
-    return null;
-  }
+  // Disabled for production
+  return null;
 
   const quickLogin = async (email) => {
     try {

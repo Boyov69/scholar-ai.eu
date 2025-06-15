@@ -16,15 +16,6 @@ import {
   Loader2,
   Search
 } from 'lucide-react';
-import { 
-  Search, 
-  Sparkles, 
-  FileText, 
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  Loader2
-} from 'lucide-react';
 import { getAgentById } from '../../lib/futureHouseAgents';
 
 const ResearchQueryForm = ({ 
