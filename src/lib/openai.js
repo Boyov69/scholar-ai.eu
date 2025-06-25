@@ -55,7 +55,7 @@ class SecureOpenAIClient {
       };
 
       // 🔒 SECURE: Call our Edge Function (no API key exposed)
-      const response = await fetch(`${this.baseUrl}/dynamic-responder`, {
+      const response = await fetch(`${this.baseUrl}/hyper-function`, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
