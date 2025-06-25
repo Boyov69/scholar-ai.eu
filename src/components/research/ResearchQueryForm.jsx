@@ -29,22 +29,14 @@ const ResearchQueryForm = ({
   const [researchDepth, setResearchDepth] = useState('standard');
   const [citationStyle, setCitationStyle] = useState('apa');
 
-  // Fix input interaction issues
-  // TODO: Consider refactoring this approach to find the root cause instead of
-  // aggressive fixes. Possible issues to investigate:
-  // - CSS rules with pointer-events: none
-  // - JavaScript libraries capturing events
-  // - Overlays with high z-index
+  // Input interactions should be handled by the browser naturally
+  // Instead of using aggressive fixes, we're now using proper React patterns
+  // and ensuring the form components have correct styling
   useEffect(() => {
-    console.log('🔄 ResearchQueryForm mounted, fixing inputs');
-    // Initial fix to ensure DOM is ready
-    const timer = setTimeout(() => {
-      fixInputInteraction();
-    }, 100);
+    console.log('🔄 ResearchQueryForm mounted');
     
     return () => {
-      clearTimeout(timer);
-      console.log('🔄 ResearchQueryForm unmounted, cleared timer');
+      console.log('🔄 ResearchQueryForm unmounted');
     };
   }, []);
 
@@ -171,21 +163,9 @@ const ResearchQueryForm = ({
               id="title"
               type="text"
               value={title}
-              onChange={(e) => {
-                console.log('🔤 Title input change:', e.target.value);
-                setTitle(e.target.value);
-              }}
-              onFocus={() => console.log('🔍 Title input focused')}
-              onBlur={() => console.log('👀 Title input blur, current value:', title)}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter a descriptive title for your research..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-              style={{
-                pointerEvents: 'auto !important',
-                userSelect: 'text !important',
-                WebkitUserSelect: 'text !important',
-                position: 'relative !important',
-                zIndex: 999
-              }}
               required
               data-testid="research-title-input"
             />
@@ -199,21 +179,9 @@ const ResearchQueryForm = ({
             <Textarea
               id="query"
               value={queryText}
-              onChange={(e) => {
-                console.log('🔤 Query text change:', e.target.value);
-                setQueryText(e.target.value);
-              }}
-              onFocus={() => console.log('🔍 Query textarea focused')}
-              onBlur={() => console.log('👀 Query textarea blur, current value:', queryText)}
+              onChange={(e) => setQueryText(e.target.value)}
               placeholder="Describe your research question in detail. Be specific about what you want to discover, analyze, or understand..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[120px] resize-none"
-              style={{
-                pointerEvents: 'auto !important',
-                userSelect: 'text !important',
-                WebkitUserSelect: 'text !important',
-                position: 'relative !important',
-                zIndex: 999
-              }}
               required
               data-testid="research-query-textarea"
             />
@@ -339,17 +307,6 @@ const ResearchQueryForm = ({
           <Button
             type="submit"
             disabled={!canSubmit}
-            onClick={(e) => {
-              console.log('🖱️ Submit button clicked');
-              console.log('📊 Current form state:', {
-                title,
-                queryText,
-                researchDepth,
-                citationStyle,
-                selectedAgents,
-                canSubmit
-              });
-            }}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 py-6"
             data-testid="research-submit-button"
           >

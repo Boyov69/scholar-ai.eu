@@ -28,8 +28,20 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { futureHouseClient, researchUtils } from '../../lib/futurehouse';
 import { db, supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
-const ResearchDashboard = () => {
+/**
+ * Enhanced Research Dashboard with workspace integration
+ *
+ * @param {Object} props - Component props
+ * @param {Object} props.workspaceIntegration - Workspace integration service
+ * @param {boolean} props.enableWorkspaceRouting - Enable routing to workspace
+ * @returns {JSX.Element} - Rendered component
+ */
+const ResearchDashboard = ({
+  workspaceIntegration = null,
+  enableWorkspaceRouting = false
+}) => {
   const navigate = useNavigate();
   const [selectedAgents, setSelectedAgents] = useState([]); // Start with no agents selected
   const [activeTab, setActiveTab] = useState('research');
@@ -197,16 +209,19 @@ const ResearchDashboard = () => {
     }
   };
 
+  // Enhanced form submission handler that directly processes the query data
   const handleQuerySubmit = async (queryData) => {
+    // Set processing state and reset reasoning updates
     setIsProcessing(true);
-    setCurrentReasoningUpdate(null); // Reset reasoning updates
+    setCurrentReasoningUpdate(null);
 
     try {
-      console.log('🚀 Real Research Query Submission:', {
+      console.log('🚀 Processing research query:', {
         user: user?.email,
         userId: user?.id,
         agents: selectedAgents,
-        query: queryData
+        query: queryData.query_text,
+        enableWorkspaceRouting
       });
 
       // Send initial reasoning update
@@ -221,6 +236,48 @@ const ResearchDashboard = () => {
       if (!user?.id) {
         console.error('❌ User not authenticated:', user);
         throw new Error('User not authenticated');
+      }
+
+      // If workspace integration is enabled, route the query to a workspace
+      // Check if this is a manual submission, not an automatic page load
+      if (enableWorkspaceRouting && workspaceIntegration && queryData.query_text && queryData.query_text.trim() !== '') {
+        sendReasoningUpdate({
+          agent: 'system',
+          type: 'workspace_integration',
+          message: 'Routing query to Academic Research Workspace...',
+          details: 'Creating new workspace with enhanced pipeline'
+        });
+
+        // Create a unique key for this submission to prevent duplicates
+        const submissionKey = `query_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem('lastQueryKey', submissionKey);
+        
+        // Process the query through the workspace integration with a single direct call
+        const integrationResult = await workspaceIntegration.createWorkspaceFromResults({
+          query: queryData.query_text,
+          metadata: {
+            researchArea: queryData.research_area || 'General Research',
+            citation_style: queryData.citation_style || 'APA',
+            agents_used: selectedAgents,
+            submissionKey
+          }
+        }, user.id, {
+          query: queryData.query_text,
+          researchArea: queryData.research_area,
+          title: queryData.title
+        });
+
+        console.log('🔄 Workspace integration result:', integrationResult);
+        
+        if (integrationResult.status === 'success') {
+          // Navigate to the workspace immediately without setTimeout
+          toast.success('Research query routed to Academic Workspace');
+          navigate(`/workspace/${integrationResult.workspaceId}/enhanced`);
+          return; // End processing here as we're redirecting
+        } else {
+          console.warn('⚠️ Workspace integration failed, falling back to standard processing');
+          // Continue with standard processing if workspace integration fails
+        }
       }
 
       // Create query record in database
@@ -344,8 +401,8 @@ const ResearchDashboard = () => {
           queryId: newQuery.id
         });
         console.log('📊 FutureHouse API results:', results);
-      console.log('📚 Literature sources found:', results.results?.literature?.sources?.length || 0);
-      console.log('📖 First source:', results.results?.literature?.sources?.[0]);
+        console.log('📚 Literature sources found:', results.results?.literature?.sources?.length || 0);
+        console.log('📖 First source:', results.results?.literature?.sources?.[0]);
 
         sendReasoningUpdate({
           agent: 'owl',
