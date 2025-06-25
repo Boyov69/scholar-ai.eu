@@ -29,12 +29,31 @@ const ResearchQueryForm = ({
   const [researchDepth, setResearchDepth] = useState('standard');
   const [citationStyle, setCitationStyle] = useState('apa');
 
-  // Fix input interaction issues
+  // Fix input interaction issues - more aggressive approach
   useEffect(() => {
+    console.log('🔄 ResearchQueryForm mounted, fixing inputs');
+    // Initial fix with delay to ensure DOM is ready
     const timer = setTimeout(() => {
       fixInputInteraction();
     }, 100);
-    return () => clearTimeout(timer);
+    
+    // Additional fix after a longer delay to catch any late-rendered elements
+    const secondTimer = setTimeout(() => {
+      console.log('🔄 Running secondary input fix');
+      fixInputInteraction();
+    }, 500);
+    
+    // Set up interval to periodically check inputs
+    const intervalTimer = setInterval(() => {
+      fixInputInteraction();
+    }, 2000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(secondTimer);
+      clearInterval(intervalTimer);
+      console.log('🔄 ResearchQueryForm unmounted, cleared all timers');
+    };
   }, []);
 
   const depthOptions = [
@@ -70,25 +89,67 @@ const ResearchQueryForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🚀 Form submission triggered');
+    console.log('📝 Current form values:', {
+      title: title,
+      queryText: queryText,
+      selectedAgents: selectedAgents,
+      researchDepth: researchDepth,
+      citationStyle: citationStyle
+    });
 
-    if (!title.trim() || !queryText.trim() || selectedAgents.length === 0) {
+    // Enhanced validation with user feedback
+    if (!title.trim()) {
+      console.error('❌ Form validation failed: Empty title');
+      alert('Please enter a research title');
+      return;
+    }
+    
+    if (!queryText.trim()) {
+      console.error('❌ Form validation failed: Empty query text');
+      alert('Please enter a research question');
+      return;
+    }
+    
+    if (selectedAgents.length === 0) {
+      console.error('❌ Form validation failed: No agents selected');
+      alert('Please select at least one AI agent');
       return;
     }
 
-    const queryData = {
-      title: title.trim(),
-      query_text: queryText.trim(),
-      selected_agents: selectedAgents,
-      research_depth: researchDepth,
-      citation_style: citationStyle,
-      timestamp: new Date().toISOString()
-    };
-
-    await onSubmit(queryData);
+    console.log('✅ Form validation passed, preparing data');
     
-    // Reset form after successful submission
-    setTitle('');
-    setQueryText('');
+    try {
+      const queryData = {
+        title: title.trim(),
+        query_text: queryText.trim(),
+        selected_agents: selectedAgents,
+        research_depth: researchDepth,
+        citation_style: citationStyle,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('📤 Submitting query data:', queryData);
+      
+      // Force a delay to ensure form state is properly captured
+      setTimeout(async () => {
+        try {
+          await onSubmit(queryData);
+          console.log('✅ Form submission successful');
+          
+          // Reset form after successful submission
+          setTitle('');
+          setQueryText('');
+          console.log('🔄 Form reset complete');
+        } catch (error) {
+          console.error('❌ Form submission error during delayed execution:', error);
+          alert(`Submission error: ${error.message || 'Unknown error'}`);
+        }
+      }, 100);
+    } catch (error) {
+      console.error('❌ Form submission error:', error);
+      alert(`Error preparing submission: ${error.message || 'Unknown error'}`);
+    }
   };
 
   const getEstimatedTime = () => {
@@ -123,17 +184,23 @@ const ResearchQueryForm = ({
               id="title"
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                console.log('🔤 Title input change:', e.target.value);
+                setTitle(e.target.value);
+              }}
+              onFocus={() => console.log('🔍 Title input focused')}
+              onBlur={() => console.log('👀 Title input blur, current value:', title)}
               placeholder="Enter a descriptive title for your research..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               style={{
-                pointerEvents: 'auto',
-                userSelect: 'text',
-                WebkitUserSelect: 'text',
-                position: 'relative',
-                zIndex: 10
+                pointerEvents: 'auto !important',
+                userSelect: 'text !important',
+                WebkitUserSelect: 'text !important',
+                position: 'relative !important',
+                zIndex: 999
               }}
               required
+              data-testid="research-title-input"
             />
           </div>
 
@@ -145,17 +212,23 @@ const ResearchQueryForm = ({
             <Textarea
               id="query"
               value={queryText}
-              onChange={(e) => setQueryText(e.target.value)}
+              onChange={(e) => {
+                console.log('🔤 Query text change:', e.target.value);
+                setQueryText(e.target.value);
+              }}
+              onFocus={() => console.log('🔍 Query textarea focused')}
+              onBlur={() => console.log('👀 Query textarea blur, current value:', queryText)}
               placeholder="Describe your research question in detail. Be specific about what you want to discover, analyze, or understand..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[120px] resize-none"
               style={{
-                pointerEvents: 'auto',
-                userSelect: 'text',
-                WebkitUserSelect: 'text',
-                position: 'relative',
-                zIndex: 10
+                pointerEvents: 'auto !important',
+                userSelect: 'text !important',
+                WebkitUserSelect: 'text !important',
+                position: 'relative !important',
+                zIndex: 999
               }}
               required
+              data-testid="research-query-textarea"
             />
             <p className="text-xs text-white/60">
               Tip: The more specific your question, the better the AI agents can assist you.
@@ -279,8 +352,19 @@ const ResearchQueryForm = ({
           <Button
             type="submit"
             disabled={!canSubmit}
-
+            onClick={(e) => {
+              console.log('🖱️ Submit button clicked');
+              console.log('📊 Current form state:', {
+                title,
+                queryText,
+                researchDepth,
+                citationStyle,
+                selectedAgents,
+                canSubmit
+              });
+            }}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 py-6"
+            data-testid="research-submit-button"
           >
             {isLoading ? (
               <>

@@ -24,11 +24,22 @@ export const SubscriptionProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Load real subscription data from Supabase
+      // For development, use mock subscription data
+      const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 
-      // Get subscription status from Stripe
-      const subscriptionData = await stripe.getSubscriptionStatus(userId);
-      setSubscription(subscriptionData);
+      if (isDevelopment) {
+        console.log('🚧 Development mode: Using mock subscription data');
+        setSubscription({
+          tier: 'basic',
+          status: 'active',
+          customerId: 'mock-customer-id'
+        });
+      } else {
+        // Load real subscription data from Supabase
+        // Get subscription status from Stripe
+        const subscriptionData = await stripe.getSubscriptionStatus(userId);
+        setSubscription(subscriptionData);
+      }
 
       // Load usage data (this would come from your backend)
       const usageData = await loadUsageData(userId);
@@ -36,6 +47,13 @@ export const SubscriptionProvider = ({ children }) => {
     } catch (err) {
       console.error('Error loading subscription data:', err);
       setError(err.message);
+
+      // Fallback to basic subscription in case of error
+      setSubscription({
+        tier: 'basic',
+        status: 'active',
+        customerId: null
+      });
     } finally {
       setLoading(false);
     }
@@ -56,7 +74,8 @@ export const SubscriptionProvider = ({ children }) => {
     return {
       queries: 15,
       collaborators: 2,
-      storage: '0.5GB'
+      storage: '0.5GB',
+      workspaces: 1 // Current workspace count
     };
   };
 
@@ -133,7 +152,7 @@ export const SubscriptionProvider = ({ children }) => {
 
   const canPerformAction = (action) => {
     const limits = getLimits();
-    
+
     switch (action) {
       case 'create_query':
         return !limits.queries?.exceeded;
@@ -141,6 +160,12 @@ export const SubscriptionProvider = ({ children }) => {
         return !limits.collaborators?.exceeded;
       case 'upload_file':
         return !limits.storage?.exceeded;
+      case 'create_workspace':
+        // Allow workspace creation for all users (basic limit checking)
+        const tier = subscription?.tier || 'free';
+        const maxWorkspaces = tier === 'free' ? 3 : tier === 'basic' ? 10 : -1; // -1 = unlimited
+        const currentWorkspaces = usage.workspaces || 0;
+        return maxWorkspaces === -1 || currentWorkspaces < maxWorkspaces;
       default:
         return true;
     }

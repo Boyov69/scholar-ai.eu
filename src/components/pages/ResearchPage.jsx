@@ -141,6 +141,7 @@ const ResearchPage = () => {
   const [loading, setLoading] = useState(false); // For form submission
   const [loadingQueries, setLoadingQueries] = useState(false); // For loading queries
   const [error, setError] = useState(null);
+  const [pendingQuery, setPendingQuery] = useState(null); // Track pending query for processing
   
   // New query form state
   const [queryForm, setQueryForm] = useState({
@@ -170,6 +171,41 @@ const ResearchPage = () => {
       loadQueries();
     }
   }, [isAuthenticated, user, navigate]);
+  
+  // Process pending query when pendingQuery is set
+  useEffect(() => {
+    const processPendingQuery = async () => {
+      if (pendingQuery) {
+        console.log('🚀 Processing pending query:', pendingQuery);
+        
+        // First, update form state
+        setQueryForm({
+          question: pendingQuery.query_text,
+          researchArea: pendingQuery.research_area || '',
+          maxResults: 50,
+          dateRange: '',
+          citationStyle: pendingQuery.citation_style || 'apa',
+          synthesisType: 'comprehensive'
+        });
+        
+        // Immediately set loading state and clear pending query
+        setLoading(true);
+        const currentQuery = pendingQuery;
+        setPendingQuery(null);
+        
+        // Verify loading state is set before continuing
+        console.log('⚠️ Setting loading state to TRUE');
+        
+        // Submit after state updates are processed
+        setTimeout(() => {
+          console.log('⚠️ Loading state check before submitQuery:', loading);
+          submitQuery();
+        }, 100);
+      }
+    };
+    
+    processPendingQuery();
+  }, [pendingQuery, loading]);
 
   const loadQueries = async () => {
     if (!user?.id) return;
@@ -197,6 +233,7 @@ const ResearchPage = () => {
     setProcessingQuery(null);
     setShowRealtimeReasoning(false); // Reset reasoning display
     setCurrentReasoningStep(null);
+    setPendingQuery(null); // Reset pending query
     setQueryForm({
       question: '',
       researchArea: '',
@@ -214,23 +251,55 @@ const ResearchPage = () => {
     console.log('🧠 Reasoning update:', step);
   };
 
-  // Handler for new ResearchQueryForm
-  const handleNewQuerySubmit = async (queryData) => {
-    console.log('🔍 New query submitted:', queryData);
-    console.log('🔍 Current loading state:', loading);
-
-    // Convert new form data to old format
-    setQueryForm({
-      question: queryData.query_text,
-      researchArea: queryData.research_area || '',
-      maxResults: 50,
-      dateRange: '',
-      citationStyle: queryData.citation_style || 'apa',
-      synthesisType: 'comprehensive'
-    });
-
-    // Submit the query
-    await submitQuery();
+  // Handler for new ResearchQueryForm - now uses pendingQuery pattern
+  const handleNewQuerySubmit = (queryData) => {
+    console.log('=== SUBMIT DEBUG ===');
+    console.log('1. Form data:', queryData);
+    console.log('2. User:', user?.id);
+    console.log('3. Loading state BEFORE:', loading);
+    
+    if (loading) {
+      console.warn('⚠️ Submission attempted while already loading - preventing duplicate');
+      alert('A research query is already in progress. Please wait for it to complete.');
+      return;
+    }
+    
+    // Validate data again to be safe
+    if (!queryData.title || !queryData.query_text) {
+      console.error('❌ Invalid form data received:', queryData);
+      alert('Missing required fields in the research form. Please fill out all required fields.');
+      return;
+    }
+    
+    try {
+      // Forcibly update the loading state first for immediate UI feedback
+      // This acts as a safeguard against double-submission
+      console.log('⚠️ Force loading state TRUE in handleNewQuerySubmit');
+      setLoading(true);
+      
+      // Enhanced logging for debugging
+      console.log('📥 Received query data:', JSON.stringify(queryData, null, 2));
+      
+      // Store query for processing by useEffect
+      setPendingQuery({
+        ...queryData,
+        _processingTimestamp: Date.now() // Add timestamp for tracking
+      });
+      
+      // Check state after update and log extended debug info
+      setTimeout(() => {
+        console.log('📊 DEBUG STATE CHECK:');
+        console.log('- Loading state:', loading);
+        console.log('- Pending query:', pendingQuery ? 'present' : 'absent');
+        console.log('- Processing query:', processingQuery ? 'present' : 'absent');
+        console.log('- Form state:', queryForm);
+      }, 100);
+      
+    } catch (error) {
+      console.error('❌ Error in handleNewQuerySubmit:', error);
+      setLoading(false); // Reset loading state on error
+      alert(`Error submitting research query: ${error.message || 'Unknown error'}`);
+    }
   };
 
   const validateQuery = () => {
@@ -248,10 +317,30 @@ const ResearchPage = () => {
   };
 
   const submitQuery = async () => {
-    if (!validateQuery()) return;
+    console.log('⚠️ submitQuery STARTED - loading state:', loading);
+    console.log('⚠️ Current form data:', queryForm);
+    
+    // Double-check that we still have a form question before proceeding
+    if (!queryForm.question || queryForm.question.trim() === '') {
+      console.error('❌ Form question is empty in submitQuery!');
+      alert('Research question is required. Please try again.');
+      setLoading(false);
+      return;
+    }
+    
+    if (!validateQuery()) {
+      console.log('⚠️ Query validation failed - resetting loading state');
+      setLoading(false);
+      return;
+    }
 
     try {
-      setLoading(true);
+      // Force loading true again as a safeguard
+      if (!loading) {
+        console.warn('⚠️ Loading state was FALSE at start of submitQuery - forcing TRUE');
+        setLoading(true);
+      }
+      console.log('🔍 SUBMIT PROCESSING - Loading is now confirmed:', loading);
       setError(null);
       setProgress(0);
 
@@ -333,6 +422,7 @@ const ResearchPage = () => {
       setActiveTab('processing');
       setShowRealtimeReasoning(true); // 🚀 Activate real-time reasoning display
       console.log('✅ Switched to processing tab with query:', activeQuery.id);
+      console.log('🚀 Current loading state before API call:', loading);
 
       // Process query with AI agents
       const query = researchUtils.createQuery(queryForm.question, {
@@ -361,6 +451,7 @@ const ResearchPage = () => {
       });
 
       console.log('🚀 Starting FutureHouse API call for query:', activeQuery.id);
+      console.log('🚀 Current loading state during API call:', loading);
 
       // 🚀 ENHANCED: Process with real-time reasoning (no delay to prevent hanging)
       const results = await Promise.race([
@@ -625,6 +716,17 @@ const ResearchPage = () => {
       console.error('❌ Research query failed:', err);
       setError(err.message);
       setProgress(0);
+      
+      // Log the current state for debugging
+      console.error('❌ Error occurred with state:', {
+        loading,
+        pendingQuery: !!pendingQuery,
+        processingQuery: !!processingQuery,
+        error: err.message
+      });
+      
+      // Reset any pending query to prevent retries
+      setPendingQuery(null);
 
       // Keep processingQuery for error display, but mark as failed
       if (processingQuery) {
