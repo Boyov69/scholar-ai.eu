@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes';
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'sonner';
 import './App.css';
+import './performance.css'; // Optimize Core Web Vitals metrics
 
 // Input interaction fixes
 import { fixInputInteraction, setupInputFixObserver } from './utils/inputFix';
@@ -22,6 +23,7 @@ const ResearchPage = lazy(() => import('./components/pages/ResearchPage'));
 const EnhancedResearchPage = lazy(() => import('./components/pages/EnhancedResearchPage'));
 const CitationsPage = lazy(() => import('./components/pages/CitationsPage'));
 const WorkspacePage = lazy(() => import('./components/pages/WorkspacePage'));
+const WorkspaceDebug = lazy(() => import('./components/debug/WorkspaceDebug'));
 const SettingsPage = lazy(() => import('./components/pages/SettingsPage'));
 const PricingPage = lazy(() => import('./components/pages/PricingPage'));
 const PrivacyPolicy = lazy(() => import('./components/pages/PrivacyPolicy'));
@@ -29,6 +31,7 @@ const CookiePolicy = lazy(() => import('./components/pages/CookiePolicy'));
 
 // 🚀 PERFORMANCE: Lazy load workspace components
 const WorkspaceDashboard = lazy(() => import('./components/workspace/WorkspaceDashboard').then(module => ({ default: module.WorkspaceDashboard })));
+const EnhancedWorkspace = lazy(() => import('./components/workspace/EnhancedWorkspace'));
 
 // Context providers
 import { AuthProvider } from './hooks/useAuth';
@@ -44,29 +47,32 @@ import DevLoginButton from './components/DevLoginButton';
 // Production configuration
 import './lib/production.js';
 
-// 🚀 PERFORMANCE: Fast loading component for lazy routes
+// 🚀 PERFORMANCE: Optimized fast loading component for lazy routes
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+    <noscript>Loading...</noscript>
   </div>
 );
 
 function App() {
-  // Fix input interaction issues on mount
+  // Input interaction handling - refactored to reduce aggressive fixes
   useEffect(() => {
-    // Initial fix
-    fixInputInteraction();
-
-    // Setup observer for dynamic content
-    const observer = setupInputFixObserver();
-
-    // Periodic fix for any missed elements
-    const interval = setInterval(fixInputInteraction, 2000);
-
-    return () => {
-      observer.disconnect();
-      clearInterval(interval);
-    };
+    console.log('🔄 App component mounted - initializing UI');
+    
+    // Only apply input fixes in development mode when specifically enabled
+    if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_INPUT_FIXES === 'true') {
+      console.log('🔧 Input fixes enabled in development mode');
+      // One-time fix on initial load
+      fixInputInteraction();
+      // Setup observer for dynamic content only when explicitly enabled
+      const observer = setupInputFixObserver();
+      
+      return () => {
+        if (observer) observer.disconnect();
+        console.log('🔧 Input fix observer disconnected');
+      };
+    }
   }, []);
 
   return (
@@ -89,6 +95,11 @@ function App() {
                       <Route path="/citations" element={<CitationsPage />} />
                       <Route path="/workspaces" element={<WorkspaceDashboard />} />
                       <Route path="/workspace/:id?" element={<WorkspacePage />} />
+                      <Route path="/debug/workspace" element={<WorkspaceDebug />} />
+                      {/* TEMPORARILY DISABLED: Enhanced Workspace */}
+                      {import.meta.env.VITE_ENABLE_ENHANCED_WORKSPACE === 'true' && (
+                        <Route path="/workspace/:workspaceId/enhanced" element={<EnhancedWorkspace />} />
+                      )}
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                       <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -104,6 +115,7 @@ function App() {
                   richColors
                   closeButton
                   theme="dark"
+                  className="metrics-green"
                 />
               </div>
             </Router>
