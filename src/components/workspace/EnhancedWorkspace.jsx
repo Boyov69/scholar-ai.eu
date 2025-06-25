@@ -9,7 +9,8 @@ import { researchWorkspaceIntegration } from '../../services/researchWorkspaceIn
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
-import { Input, Textarea } from '../ui/input';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
