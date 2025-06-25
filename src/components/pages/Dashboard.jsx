@@ -183,9 +183,10 @@ const Dashboard = () => {
     return 'text-green-400';
   };
 
-  // Quick actions - Enhanced Research is visible to all but access-controlled
+  // Quick actions - Enhanced features can be disabled via feature flag
   const quickActions = [
-    {
+    // TEMPORARILY DISABLED: Enhanced Research
+    ...(import.meta.env.VITE_ENABLE_ENHANCED_WORKSPACE === 'true' ? [{
       title: 'Enhanced Research',
       description: 'Multi-agent AI research with FutureHouse',
       icon: Zap,
@@ -193,7 +194,7 @@ const Dashboard = () => {
       color: 'bg-gradient-to-r from-green-500 to-blue-500 text-white',
       badge: 'FREE TRIAL',
       highlight: true // No longer premium - free for all users
-    },
+    }] : []),
     {
       title: 'Standard Research',
       description: 'Start a new AI-powered research',
@@ -209,10 +210,10 @@ const Dashboard = () => {
       color: 'bg-green-500/20 text-green-400'
     },
     {
-      title: 'Create Workspace',
+      title: 'Manage Workspaces',
       description: 'Collaborate with your team',
       icon: Users,
-      action: () => navigate('/workspace'),
+      action: () => navigate('/workspaces'),
       color: 'bg-purple-500/20 text-purple-400'
     },
     {
@@ -276,11 +277,12 @@ const Dashboard = () => {
                 New Query
               </Button>
               <Button
-                className="ice-gradient hover:opacity-90"
-                onClick={() => navigate('/workspace')}
+                variant="outline"
+                className="border-primary/30"
+                onClick={() => navigate('/workspaces')}
               >
-                <Users className="h-4 w-4 mr-2" />
-                Collaborate
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Workspaces
               </Button>
             </div>
           </div>
@@ -382,6 +384,33 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* If no workspaces, show redirect card */}
+        {stats.workspaces === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="glass-strong">
+              <CardContent className="p-6 text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">Create Your First Workspace</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start collaborating with your team on research projects
+                </p>
+                <Button
+                  onClick={() => navigate('/workspaces')}
+                  className="ice-gradient hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Go to Workspaces
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}

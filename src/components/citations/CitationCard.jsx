@@ -42,11 +42,41 @@ export const CitationCard = ({ citation, onDelete, onUpdate }) => {
 
   const copyToClipboard = async (text, format = 'APA') => {
     try {
-      await navigator.clipboard.writeText(text);
+      // Check if clipboard API is available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for browsers that don't support the Clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';  // Avoid scrolling to bottom
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.width = '2em';
+        textArea.style.height = '2em';
+        textArea.style.padding = '0';
+        textArea.style.border = 'none';
+        textArea.style.outline = 'none';
+        textArea.style.boxShadow = 'none';
+        textArea.style.background = 'transparent';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (!successful) {
+          throw new Error('Copy command was unsuccessful');
+        }
+      }
+      
+      // Show success message
       setCopySuccess(`${format} citation copied!`);
       setTimeout(() => setCopySuccess(''), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+      alert(`Failed to copy: ${err.message || 'Unknown error'}`);
     }
   };
 

@@ -3,8 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
-import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
@@ -35,11 +33,14 @@ import {
   Copy,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Wrench
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { db, supabase, workspaceMembers, users } from '../../lib/supabase';
+import WorkspaceTools from '../workspace/WorkspaceTools';
+import { CreateWorkspaceModal } from '../workspace/CreateWorkspaceModal';
 
 // Development mode detection
 const isDevelopmentMode = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
@@ -57,13 +58,7 @@ const WorkspacePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Create workspace modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    name: '',
-    description: '',
-    isPublic: false
-  });
+  // Removed: Create workspace modal state (now handled in WorkspaceDashboard)
   
   // Invite member state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -84,10 +79,9 @@ const WorkspacePage = () => {
     }
   }, [isAuthenticated, workspaceId]);
 
-  // Debug modal state changes
-  useEffect(() => {
-    console.log('🔘 Modal state changed - showCreateModal:', showCreateModal);
-  }, [showCreateModal]);
+  // Create workspace modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
 
   // Debug subscription and permissions
   useEffect(() => {
@@ -212,143 +206,39 @@ const WorkspacePage = () => {
     }
   };
 
-  const createWorkspace = async () => {
-    console.log('=============== CREATE WORKSPACE DEBUG ===============');
-    console.log('1. Function called');
-    setError(null); // Clear any previous errors
-
-    // Check permissions (but don't block for debugging)
-    const canCreate = canPerformAction('create_workspace');
-    console.log('2. Permission check result:', canCreate);
-
-    if (!canCreate) {
-      console.warn('⚠️ Permission check failed, but continuing for debugging');
-      // setError('You have reached your workspace limit. Please upgrade your plan.');
-      // return;
+  const handleCreateSubmit = async (workspaceData) => {
+    if (!canPerformAction('create_workspace')) {
+      setError('You have reached your workspace limit. Please upgrade your plan.');
+      return;
     }
 
     try {
-      console.log('3. Setting loading state');
-      setLoading(true);
-      
-      console.log('4. Preparing workspace data');
-      console.log('4a. User:', user);
-      
-      if (!user || !user.id) {
-        console.error('❌ ERROR: Missing user data:', user);
-        setError('User data not available. Please sign in again.');
-        setLoading(false);
-        return;
-      }
-      
-      // Validate form data
-      if (!createForm.name.trim()) {
-        setError('Workspace name is required');
-        setLoading(false);
-        return;
-      }
-      
-      const workspaceData = {
-        owner_id: user.id,
-        name: createForm.name.trim(),
-        description: createForm.description.trim(),
-        is_public: createForm.isPublic,
-        settings: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      setCreateLoading(true);
+      console.log('🏗️ Creating workspace:', workspaceData);
 
-      console.log('5. Workspace data prepared:', JSON.stringify(workspaceData));
-      console.log('6. Calling db.createWorkspace');
-      
-      // Check if db object is available
-      if (!db || !db.createWorkspace) {
-        console.error('❌ ERROR: db or db.createWorkspace is not available:', db);
-        setError('Database connection error');
-        setLoading(false);
-        return;
-      }
-      
-      const result = await db.createWorkspace(workspaceData);
-      console.log('7. createWorkspace result:', result);
-      
-      if (!result) {
-        throw new Error('No result returned from createWorkspace');
-      }
-      
-      const { data, error } = result;
-      
-      if (error) {
-        console.error('8a. ❌ Error creating workspace:', error);
-        throw error;
-      }
-      
-      if (!data) {
-        console.error('8b. ❌ No data returned from createWorkspace');
-        throw new Error('Failed to create workspace - no data returned');
-      }
-      
-      // Handle both array and object returns for better compatibility
+      const { data, error } = await db.createWorkspace(workspaceData);
+      if (error) throw error;
+
+      console.log('✅ Workspace created successfully:', data);
+      // Handle both array and single object responses
       const newWorkspace = Array.isArray(data) ? data[0] : data;
-      console.log('9. Processed workspace data:', newWorkspace);
-      
-      if (!newWorkspace || !newWorkspace.id) {
-        console.error('10a. ❌ Invalid workspace data:', newWorkspace);
-        throw new Error('Failed to create workspace - invalid data structure');
-      }
-      
-      console.log('10b. ✅ Workspace created successfully:', newWorkspace.id);
 
       // Add creator as owner
-      console.log('11. Adding creator as owner');
-      
-      // Check if workspaceMembers is available
-      if (!workspaceMembers || !workspaceMembers.create) {
-        console.error('❌ ERROR: workspaceMembers or workspaceMembers.create is not available:', workspaceMembers);
-        throw new Error('Could not add member to workspace - API not available');
-      }
-      
-      const memberData = {
+      await workspaceMembers.create({
         workspace_id: newWorkspace.id,
         user_id: user.id,
-        role: 'owner',
-        joined_at: new Date().toISOString()
-      };
-      console.log('12. Member data:', JSON.stringify(memberData));
-      
-      // Try to add user as member, but don't fail if it's a mock workspace
-      const memberResult = await workspaceMembers.create(memberData);
-      console.log('13. Member creation result:', memberResult);
-      
-      if (memberResult.error) {
-        console.error('❌ Error adding member to workspace:', memberResult.error);
-        
-        // Only fail if we're NOT in development mode with a mock workspace
-        if (!isDevelopmentMode || !newWorkspace.id.startsWith('mock-workspace-')) {
-          throw memberResult.error;
-        } else {
-          console.log('⚠️ Ignoring member error in development mode for mock workspace');
-        }
-      }
+        role: 'owner'
+      });
 
-      console.log('14. Loading workspaces');
       await loadWorkspaces();
-      
-      console.log('15. Resetting UI state');
       setShowCreateModal(false);
-      setCreateForm({ name: '', description: '', isPublic: false });
-      
-      console.log('16. Navigating to new workspace');
       navigate(`/workspace/${newWorkspace.id}`);
-      console.log('17. ✅ Complete workspace creation process');
-      
+
     } catch (err) {
-      console.error('❌ Workspace creation failed:', err);
-      setError(err.message || 'Failed to create workspace');
+      console.error('❌ Create workspace failed:', err);
+      setError(err.message);
     } finally {
-      console.log('18. Setting loading to false');
-      setLoading(false);
-      console.log('=============== END CREATE WORKSPACE DEBUG ===============');
+      setCreateLoading(false);
     }
   };
 
@@ -480,20 +370,12 @@ const WorkspacePage = () => {
               </div>
               
               <Button
-                onClick={() => {
-                  console.log('🔘 New Workspace button clicked');
-                  console.log('🔘 Current user:', user);
-                  console.log('🔘 Can perform action:', canPerformAction('create_workspace'));
-                  console.log('🔘 Setting showCreateModal to true');
-                  setError(null); // Clear any previous errors
-                  setShowCreateModal(true);
-                }}
+                onClick={() => setShowCreateModal(true)}
                 className="ice-gradient hover:opacity-90"
-                // Temporarily remove disabled state to test modal opening
-                // disabled={!canPerformAction('create_workspace')}
+                disabled={!canPerformAction('create_workspace')}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                New Workspace
+                Create Workspace
               </Button>
             </div>
           </motion.div>
@@ -564,14 +446,9 @@ const WorkspacePage = () => {
                   Create your first workspace to start collaborating with your team on research projects.
                 </p>
                 <Button
-                  onClick={() => {
-                    console.log('🔘 Create Workspace button (empty state) clicked');
-                    setError(null);
-                    setShowCreateModal(true);
-                  }}
+                  onClick={() => setShowCreateModal(true)}
                   className="ice-gradient hover:opacity-90"
-                  // Temporarily remove disabled state to test modal opening
-                  // disabled={!canPerformAction('create_workspace')}
+                  disabled={!canPerformAction('create_workspace')}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Workspace
@@ -580,112 +457,13 @@ const WorkspacePage = () => {
             </Card>
           )}
 
-          {/* Create Workspace Modal - Direct implementation */}
-          {showCreateModal && (
-            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-                 onClick={() => {
-                   console.log('🔘 Modal backdrop clicked');
-                   setShowCreateModal(false);
-                 }}>
-              <div
-                className="bg-background rounded-lg shadow-lg w-full max-w-md overflow-hidden"
-                onClick={(e) => {
-                  console.log('🔘 Modal content clicked');
-                  e.stopPropagation();
-                }}
-              >
-                {/* Header */}
-                <div className="p-6 pb-2">
-                  <h2 className="text-2xl font-bold">Create New Workspace</h2>
-                  <p className="text-muted-foreground mt-1">
-                    Set up a collaborative space for your research team
-                  </p>
-                  {/* Debug info */}
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    Debug: Modal is rendering. User: {user?.email || 'No user'}
-                  </div>
-                </div>
-                
-                {/* Content */}
-                <div className="p-6 pt-2">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Workspace Name</Label>
-                      <Input
-                        placeholder="Enter workspace name"
-                        value={createForm.name}
-                        onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Description (Optional)</Label>
-                      <Textarea
-                        placeholder="Describe the purpose of this workspace"
-                        value={createForm.description}
-                        onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="isPublic"
-                        checked={createForm.isPublic}
-                        onChange={(e) => setCreateForm(prev => ({ ...prev, isPublic: e.target.checked }))}
-                        className="rounded border-border"
-                      />
-                      <Label htmlFor="isPublic" className="text-sm">
-                        Make this workspace public
-                      </Label>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex justify-end gap-2 mt-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        console.log('Canceling workspace creation');
-                        setShowCreateModal(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('🔘 Create button clicked in modal');
-                        console.log('🔘 Form data:', createForm);
-                        console.log('🔘 Loading state:', loading);
-                        console.log('🔘 User data:', user);
-
-                        if (!createForm.name.trim()) {
-                          console.log('🔘 Validation failed: name is required');
-                          setError('Workspace name is required');
-                          return;
-                        }
-
-                        console.log('🔘 Calling createWorkspace function');
-                        createWorkspace();
-                      }}
-                      disabled={!createForm.name.trim() || loading}
-                      className="ice-gradient hover:opacity-90"
-                    >
-                      {loading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4 mr-2" />
-                      )}
-                      Create
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Create Workspace Modal */}
+          <CreateWorkspaceModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSubmit={handleCreateSubmit}
+            loading={createLoading}
+          />
         </div>
       </div>
     );
@@ -735,6 +513,7 @@ const WorkspacePage = () => {
           <div className="flex gap-2 mb-6">
             {[
               { id: 'overview', label: 'Overview', icon: Eye },
+              { id: 'tools', label: 'Tools', icon: Wrench },
               { id: 'queries', label: 'Research', icon: FileText },
               { id: 'members', label: 'Members', icon: Users },
               { id: 'activity', label: 'Activity', icon: Activity }
@@ -878,6 +657,13 @@ const WorkspacePage = () => {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {activeTab === 'tools' && (
+          <WorkspaceTools
+            workspaceId={currentWorkspace?.id}
+            workspaceSettings={currentWorkspace?.settings || {}}
+          />
         )}
 
         {activeTab === 'members' && (

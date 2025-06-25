@@ -135,6 +135,18 @@ const ResearchPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { canPerformAction, getRemainingQuota } = useSubscription();
+
+  // 🔧 DEBUG: Log environment configuration on component mount
+  useEffect(() => {
+    console.log('🔧 ResearchPage Environment Debug:', {
+      DEV: import.meta.env.DEV,
+      MODE: import.meta.env.MODE,
+      hostname: window.location.hostname,
+      VITE_USE_LOCAL_OPENAI: import.meta.env.VITE_USE_LOCAL_OPENAI,
+      VITE_USE_REAL_API: import.meta.env.VITE_USE_REAL_API,
+      VITE_OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY ? 'Present' : 'Missing'
+    });
+  }, []);
   
   const [activeTab, setActiveTab] = useState('new-query');
   const [queries, setQueries] = useState([]);
@@ -347,13 +359,14 @@ const ResearchPage = () => {
 
       console.log('🔍 Prepared query data:', queryData);
 
-      // 🚧 DEVELOPMENT MODE: Use mock query for reliable testing
-      // This bypasses both database timeout and API CSP issues
+      // 🚧 MOCK MODE: Only use mock query when not using real APIs
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+      const useLocalOpenAI = import.meta.env.VITE_USE_LOCAL_OPENAI === 'true';
+      const useRealAPI = import.meta.env.VITE_USE_REAL_API === 'true';
 
       let activeQuery;
-      if (isDevelopment) {
-        console.log('🚧 Development mode: Using mock query for reliable testing');
+      if (isDevelopment && !useLocalOpenAI && !useRealAPI) {
+        console.log('🚧 Mock mode: Using mock query (no real APIs configured)');
         activeQuery = {
           id: `dev-${Date.now()}`,
           ...queryData,
@@ -551,9 +564,9 @@ const ResearchPage = () => {
           console.log('📋 Sample citation:', window.recentCitations[0]);
 
           try {
-            // In development mode, skip database save and use mock citations
-            if (isDevelopment) {
-              console.log('🚧 Development mode: Using mock citations, skipping database save');
+            // Only use mock citations when no real APIs are configured
+            if (isDevelopment && !useLocalOpenAI && !useRealAPI) {
+              console.log('🚧 Mock mode: Using mock citations, skipping database save');
               const mockCitations = citationsToSave.map((citation, index) => ({
                 ...citation,
                 id: `mock-citation-${Date.now()}-${index}`,
@@ -637,12 +650,11 @@ const ResearchPage = () => {
 
       try {
         console.log('🔍 About to refresh queries list...');
-        // Skip loadQueries in development mode to avoid database timeout
-        // isDevelopment is already declared earlier in the function
-        if (!isDevelopment) {
+        // Only skip loadQueries when in pure mock mode
+        if (!isDevelopment || useLocalOpenAI || useRealAPI) {
           await loadQueries();
         } else {
-          console.log('🚧 Skipping loadQueries in development mode');
+          console.log('🚧 Skipping loadQueries in mock mode');
         }
 
         console.log('🔍 About to store completed query results...');

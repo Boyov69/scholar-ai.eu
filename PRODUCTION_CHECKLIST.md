@@ -110,7 +110,32 @@ This comprehensive checklist ensures your Scholar AI platform is ready for produ
 - [ ] **External Services**: Third-party service health checks
 - [ ] **Automated Testing**: Automated health check tests
 
-## 🔧 Operations & Maintenance
+## � CRITICAL: FutureHouse API Implementation
+
+### FutureHouse Integration Issues
+- [ ] **CRITICAL**: Current implementation is JavaScript-based, but FutureHouse requires Python
+- [ ] **CRITICAL**: No real FutureHouse API calls - only mocks and OpenAI fallbacks
+- [ ] **CRITICAL**: Missing official JobNames enum (CROW, FALCON, OWL, PHOENIX)
+- [ ] **CRITICAL**: Incorrect API client setup - not using futurehouse-client package
+
+### Required Actions Before Production
+- [ ] **Implement Python Backend**: Create FastAPI/Flask service with futurehouse-client
+- [ ] **Real API Integration**: Replace mock responses with actual FutureHouse calls
+- [ ] **JobNames Implementation**: Use official JobNames.CROW, JobNames.FALCON, etc.
+- [ ] **API Key Validation**: Verify FutureHouse API key works with real endpoints
+- [ ] **Error Handling**: Implement proper error handling for FutureHouse API failures
+- [ ] **Rate Limiting**: Implement FutureHouse API rate limiting
+- [ ] **Cost Monitoring**: Track FutureHouse API usage and costs
+
+### Alternative Options
+- [ ] **Option A**: Python microservice for FutureHouse integration
+- [ ] **Option B**: Supabase Edge Functions with Python runtime
+- [ ] **Option C**: Replace FutureHouse with alternative AI research APIs
+- [ ] **Option D**: Hybrid approach - keep OpenAI for some features
+
+⚠️ **WARNING: Current FutureHouse integration is NOT production-ready**
+
+## �🔧 Operations & Maintenance
 
 ### Documentation
 - [ ] **API Documentation**: Complete API documentation

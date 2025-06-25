@@ -38,6 +38,7 @@ export const config = {
   futurehouse: {
     apiKey: import.meta.env.VITE_FUTUREHOUSE_API_KEY || 'your-futurehouse-api-key',
     baseUrl: 'https://api.futurehouse.org',
+    backendUrl: import.meta.env.VITE_FUTUREHOUSE_BACKEND_URL || 'http://localhost:8000',
     agents: {
       crow: 'crow-agent-id',
       falcon: 'falcon-agent-id',

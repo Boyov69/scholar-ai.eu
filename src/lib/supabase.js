@@ -467,7 +467,16 @@ export const db = {
 
   createWorkspace: async (workspaceData) => {
     try {
-      console.log('✅ createWorkspace:', workspaceData.name);
+      console.log('✅ createWorkspace DEBUG - Input data:', JSON.stringify(workspaceData));
+      
+      // Validate required fields
+      if (!workspaceData.name || !workspaceData.owner_id) {
+        console.error('❌ Missing required fields for workspace creation');
+        return {
+          data: null,
+          error: new Error('Missing required fields: name and owner_id are required')
+        };
+      }
 
       // In development mode, create mock workspace
       if (isDevelopmentMode) {
@@ -478,21 +487,32 @@ export const db = {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-        return { data: [mockWorkspace], error: null };
+        console.log('✅ Mock workspace created successfully:', mockWorkspace.id);
+        return { data: mockWorkspace, error: null };
       }
 
       // Production mode: insert into database
+      console.log('💾 Inserting workspace into database:', workspaceData.name);
       const { data, error } = await supabase
         .from('workspaces')
         .insert([workspaceData])
-        .select();
+        .select()
+        .single(); // Ensure we get a single object back
 
       if (error) {
-        console.error('❌ Database error:', error);
+        console.error('❌ Database error creating workspace:', error);
         return { data: null, error };
       }
 
-      console.log('✅ Workspace created successfully');
+      if (!data) {
+        console.error('❌ No data returned from workspace creation');
+        return {
+          data: null,
+          error: new Error('No data returned from database when creating workspace')
+        };
+      }
+
+      console.log('✅ Workspace created successfully:', data.id);
       return { data, error: null };
     } catch (error) {
       console.error('Create workspace error:', error);
@@ -565,14 +585,31 @@ export const workspaceMembers = {
   create: async (memberData) => {
     try {
       console.log('👥 Adding workspace member:', memberData);
+      
+      // Check if we're in development mode with a mock workspace ID
+      if (isDevelopmentMode && memberData.workspace_id && typeof memberData.workspace_id === 'string' &&
+          memberData.workspace_id.startsWith('mock-workspace-')) {
+        console.log('🚧 Development mode: Creating mock workspace member for mock workspace');
+        // Create a mock member record
+        const mockMemberData = {
+          id: `mock-member-${Date.now()}`,
+          ...memberData,
+          joined_at: new Date().toISOString()
+        };
+        console.log('✅ Mock workspace member created:', mockMemberData);
+        return { data: mockMemberData, error: null };
+      }
+      
+      // Production mode or real workspace ID
       const { data, error } = await supabase
         .from('workspace_members')
         .insert([{
           ...memberData,
-          joined_at: new Date().toISOString()
+          joined_at: memberData.joined_at || new Date().toISOString()
         }])
         .select()
         .single();
+      
       return { data, error };
     } catch (error) {
       console.error('❌ Create workspace member error:', error);

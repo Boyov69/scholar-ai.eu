@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  futurehouse-backend:
+    build: .
+    container_name: scholar-ai-futurehouse
+    ports:
+      - "8000:8000"
+    environment:
+      - FUTUREHOUSE_API_KEY=${FUTUREHOUSE_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./app:/app/app  # Mount app directory for hot reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - scholar-ai-network
+
+networks:
+  scholar-ai-network:
+    driver: bridge

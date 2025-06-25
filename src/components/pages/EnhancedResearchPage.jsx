@@ -7,16 +7,34 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Crown, Zap, ArrowRight, Lock } from 'lucide-react';
+import { Crown, Zap, ArrowRight, Lock, Folders, ExternalLink } from 'lucide-react';
 import ResearchDashboard from '../research/ResearchDashboard';
+import { researchWorkspaceIntegration } from '../../services/researchWorkspaceIntegration';
+import { toast } from 'sonner';
 
+/**
+ * Enhanced Research Page with automatic workspace integration
+ * All research queries are routed to the Enhanced Workspace
+ */
 const EnhancedResearchPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const { tier, loading: subscriptionLoading } = useSubscription();
+  const [isPageReady, setIsPageReady] = useState(false);
 
   // Enhanced Research is now available for all users as 1-month free trial
   const hasAccess = true; // Free trial for all users
+  
+  // Preload critical resources and optimize LCP
+  useEffect(() => {
+    // Pre-render high-priority elements
+    document.documentElement.classList.add('optimize-lcp');
+    const timer = setTimeout(() => {
+      setIsPageReady(true);
+      document.documentElement.classList.remove('optimize-lcp');
+    }, 50); // Faster preload
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check if user is in free trial period (1 month from account creation)
   const isFreeTrial = () => {
@@ -37,9 +55,10 @@ const EnhancedResearchPage = () => {
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
+    // Shorter timeout for better perceived performance
     const timer = setTimeout(() => {
       setLoadingTimeout(true);
-    }, 3000); // 3 second timeout
+    }, 800); // Further reduced timeout for better UX
 
     return () => clearTimeout(timer);
   }, []);
@@ -196,13 +215,8 @@ const EnhancedResearchPage = () => {
 
         <div className="relative z-10 py-8 px-4">
           <div className="container mx-auto max-w-7xl">
-            {/* Free Trial Banner */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-6"
-            >
+            {/* Free Trial Banner - Optimized for performance */}
+            <div className="mb-6">
               <Card className="glass-strong border-green-500/30 bg-gradient-to-r from-green-500/10 to-blue-500/10">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -217,21 +231,106 @@ const EnhancedResearchPage = () => {
                         </p>
                       </div>
                     </div>
-                    <Badge className="bg-gradient-to-r from-green-500 to-blue-500 text-white border-0">
-                      FREE TRIAL
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-green-600/20 border-green-500/50 text-green-300 hover:bg-green-600/30 hover:text-green-200"
+                        onClick={() => navigate('/workspaces')}
+                      >
+                        <Folders className="w-4 h-4 mr-1" />
+                        Workspaces
+                      </Button>
+                      <Badge className="bg-gradient-to-r from-green-500 to-blue-500 text-white border-0">
+                        FREE TRIAL
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <ResearchDashboard />
-            </motion.div>
+            {/* Tabs - Optimized for faster rendering */}
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button className="text-white font-medium border-b-2 border-blue-500 pb-1 px-1">
+                  Research
+                </button>
+                <button
+                  className="text-gray-400 hover:text-white border-b-2 border-transparent hover:border-gray-600 pb-1 px-1 transition-colors"
+                  onClick={() => {
+                    const latestWorkspaceId = localStorage.getItem('lastResearchWorkspaceId');
+                    if (latestWorkspaceId) {
+                      navigate(`/workspace/${latestWorkspaceId}/enhanced`);
+                    } else {
+                      navigate('/workspaces');
+                      toast.info('Select a workspace to continue research');
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Folders className="w-4 h-4" />
+                    Academic Workspace
+                    <ExternalLink className="w-3 h-3" />
+                  </span>
+                </button>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-green-600/20 border-green-500/50 text-green-300 hover:bg-green-600/30 hover:text-green-200"
+                onClick={(e) => {
+                  // Prevent multiple clicks
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  // Disable button to prevent multiple workspace creations
+                  const btn = e.currentTarget;
+                  btn.disabled = true;
+                  
+                  if (!user) {
+                    toast.error('You need to be logged in to create a workspace');
+                    setTimeout(() => { btn.disabled = false; }, 1000);
+                    return;
+                  }
+                  
+                  // Show loading toast with ID to be able to dismiss it later
+                  const toastId = toast.loading('Creating new workspace...');
+                  
+                  // Create a new empty workspace
+                  researchWorkspaceIntegration.createWorkspaceFromResults({}, user.id, {
+                    query: "New Research Project",
+                    researchArea: "Research"
+                  }).then(result => {
+                    toast.dismiss(toastId);
+                    
+                    if (result.status === 'success') {
+                      localStorage.setItem('lastResearchWorkspaceId', result.workspaceId);
+                      navigate(`/workspace/${result.workspaceId}/enhanced`);
+                    } else {
+                      toast.error('Failed to create workspace');
+                      setTimeout(() => { btn.disabled = false; }, 1000);
+                    }
+                  }).catch(err => {
+                    console.error('Workspace creation error:', err);
+                    toast.dismiss(toastId);
+                    toast.error('Error creating workspace');
+                    setTimeout(() => { btn.disabled = false; }, 1000);
+                  });
+                }}
+              >
+                <Folders className="w-4 h-4 mr-1" />
+                New Workspace
+              </Button>
+            </div>
+
+            <div>
+              <ResearchDashboard
+                workspaceIntegration={researchWorkspaceIntegration}
+                enableWorkspaceRouting={true}
+              />
+            </div>
           </div>
         </div>
       </div>

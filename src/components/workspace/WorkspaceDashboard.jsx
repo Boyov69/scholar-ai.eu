@@ -119,19 +119,27 @@ export const WorkspaceDashboard = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  // Added debugging info to the handleCreateWorkspace function
   const handleCreateWorkspace = () => {
+    console.log('🔍 Debug - handleCreateWorkspace called');
+    console.log('🔍 Debug - Current showCreateModal state:', showCreateModal);
     setShowCreateModal(true);
+    console.log('🔍 Debug - New showCreateModal state:', true);
   };
 
   const handleCreateSubmit = async (workspaceData) => {
     try {
       setCreateLoading(true);
       console.log('🏗️ Creating workspace:', workspaceData);
-
+      
+      // Log the development mode status
+      console.log('🔍 Debug - isDevelopmentMode:', import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true');
+      
       const { data, error } = await db.createWorkspace(workspaceData);
 
       if (error) {
         console.error('❌ Create workspace failed:', error);
+        alert(`Error creating workspace: ${error.message}`);
         return;
       }
 

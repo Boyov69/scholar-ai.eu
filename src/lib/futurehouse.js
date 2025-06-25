@@ -1,17 +1,47 @@
 import { config } from './config.js';
+import { futureHouseBackend, checkBackendAvailability } from './futurehouse-backend.js';
 
 // 🚀 REAL API CONFIGURATION FOR LOCAL TESTING
 const USE_REAL_API = import.meta.env.VITE_USE_REAL_API === 'true';
 const USE_LOCAL_OPENAI = import.meta.env.VITE_USE_LOCAL_OPENAI === 'true';
+const USE_BACKEND = import.meta.env.VITE_USE_FUTUREHOUSE_BACKEND === 'true';
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY; // For local testing only
 
 console.log('🔧 Scholar AI API Configuration:', {
   useRealAPI: USE_REAL_API,
   useLocalOpenAI: USE_LOCAL_OPENAI,
+  useBackend: USE_BACKEND,
   hasFutureHouseKey: !!config.futurehouse.apiKey,
   hasOpenAIKey: !!OPENAI_API_KEY,
-  mode: import.meta.env.MODE
+  mode: import.meta.env.MODE,
+  rawEnvVars: {
+    VITE_USE_REAL_API: import.meta.env.VITE_USE_REAL_API,
+    VITE_USE_LOCAL_OPENAI: import.meta.env.VITE_USE_LOCAL_OPENAI,
+    VITE_USE_FUTUREHOUSE_BACKEND: import.meta.env.VITE_USE_FUTUREHOUSE_BACKEND
+  }
 });
+
+// Check backend availability on startup
+if (USE_BACKEND) {
+  checkBackendAvailability().then(status => {
+    console.log('🔌 FutureHouse Backend Status:', status);
+    if (status.available) {
+      console.log('✅ Backend is available and ready');
+      if (status.futurehouse_available) {
+        console.log('✅ FutureHouse client is properly configured in backend');
+      } else {
+        console.warn('⚠️ FutureHouse client not available in backend - will use mock responses');
+      }
+    } else {
+      console.warn('⚠️ Backend unavailable - falling back to frontend processing');
+    }
+  }).catch(error => {
+    console.warn('⚠️ Backend health check failed:', error.message);
+  });
+}
+
+// Query cache for performance optimization
+const queryCache = new Map();
 
 // FutureHouse API client for AI research capabilities
 class FutureHouseClient {
@@ -73,14 +103,14 @@ class FutureHouseClient {
 
   // Generic API request method
   async request(endpoint, options = {}) {
-    // 🚀 LOCAL REAL API TESTING MODE
+    // 🚀 LOCAL REAL API TESTING MODE - HIGHEST PRIORITY
     if (USE_LOCAL_OPENAI && this.openaiKey) {
       console.log('🔥 Using REAL OpenAI API for local testing:', endpoint);
       return this.handleRealAPIRequest(endpoint, options);
     }
 
-    // 🧪 MOCK MODE (default for development)
-    if (!USE_REAL_API || import.meta.env.VITE_APP_ENV === 'development') {
+    // 🧪 MOCK MODE (only when not using local OpenAI)
+    if (!USE_REAL_API && !USE_LOCAL_OPENAI) {
       console.log('🧪 Mock FutureHouse API request:', endpoint, options);
 
       // Simulate API delay
@@ -374,22 +404,79 @@ Provide actionable insights for advancing the field.`;
     });
   }
 
-  // Multi-agent research query processing
+  // Multi-agent research query processing with caching
   async processResearchQuery(query, options = {}) {
+    // Generate cache key based on query content and options
+    const cacheKey = JSON.stringify({
+      question: query.question,
+      researchArea: query.researchArea,
+      maxResults: query.maxResults,
+      citationStyle: query.citationStyle,
+      synthesisType: query.synthesisType,
+      analysisDepth: query.analysisDepth
+    });
+
+    // Check if we have a cached result for this query
+    if (queryCache.has(cacheKey)) {
+      console.log('📦 Using cached result for query:', query.question);
+      return queryCache.get(cacheKey);
+    }
+
+    // No cache hit, process the query
+    const result = await this._processQuery(query, options);
+
+    // Cache the result for future use
+    queryCache.set(cacheKey, result);
+
+    // Clear cache entry after 1 hour to avoid stale data
+    setTimeout(() => {
+      console.log('🧹 Clearing cache for query:', query.question);
+      queryCache.delete(cacheKey);
+    }, 3600000); // 1 hour
+
+    return result;
+  }
+
+  // Private method for actual query processing
+  async _processQuery(query, options = {}) {
     const queryId = options.queryId || `query_${Date.now()}`;
 
     try {
       console.log('🤖 Starting multi-agent research query processing...', {
         queryId,
         question: query.question,
-        maxResults: query.maxResults
+        maxResults: query.maxResults,
+        useBackend: USE_BACKEND
       });
 
-      // 🚧 DEVELOPMENT MODE: Skip API calls and use mock data directly
-      const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+      // 🚀 USE PYTHON BACKEND IF AVAILABLE
+      if (USE_BACKEND) {
+        console.log('🔌 Using FutureHouse Python Backend...');
+        try {
+          // First check if backend is available
+          const healthCheck = await checkBackendAvailability();
+          if (!healthCheck.available) {
+            throw new Error(`Backend unavailable: ${healthCheck.reason}`);
+          }
 
-      if (isDevelopment) {
-        console.log('🚧 Development mode: Using mock data directly (bypassing API calls)');
+          const result = await futureHouseBackend.processResearchQuery(query, options);
+          console.log('✅ Backend processing completed successfully');
+
+          // Ensure result has proper structure
+          if (result && result.status === 'completed') {
+            return result;
+          } else {
+            throw new Error('Backend returned invalid response structure');
+          }
+        } catch (backendError) {
+          console.error('❌ Backend processing failed, falling back to frontend processing:', backendError.message);
+          // Continue to fallback logic below - don't return here
+        }
+      }
+
+      // 🧪 MOCK MODE: Only use mock data when not using local OpenAI
+      if (!USE_REAL_API && !USE_LOCAL_OPENAI) {
+        console.log('🧪 Mock mode: Using mock data directly (no real API configured)');
 
         // Simulate processing delay
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -398,6 +485,13 @@ Provide actionable insights for advancing the field.`;
         const mockSynthesis = this.getMockSynthesis(query.question);
         const mockCitations = this.getMockCitations(mockLiterature.sources);
         const mockGaps = this.getMockGapAnalysis(query.researchArea || query.question);
+
+        // Generate pre-formatted citations for immediate use
+        const formattedCitations = mockLiterature.sources.map(source => ({
+          text: `${source.authors.join(', ')} (${source.year || new Date().getFullYear()}). ${source.title}. ${source.journal || 'Unknown Journal'}.${source.doi ? ` https://doi.org/${source.doi}` : ''}`,
+          style: 'apa',
+          source: source
+        }));
 
         return {
           queryId,
@@ -408,110 +502,72 @@ Provide actionable insights for advancing the field.`;
             citations: mockCitations,
             gaps: mockGaps
           },
+          // Add pre-formatted citations for immediate use
+          formattedCitations: formattedCitations,
           metadata: {
             processed_at: new Date().toISOString(),
             agents_used: ['crow', 'falcon', 'owl', 'phoenix'],
             total_sources: mockLiterature.sources?.length || 0,
             development_mode: true,
-            processing_time_ms: 2000
+            processing_time_ms: 2000,
+            cached: false
           }
         };
       }
 
-      // Production mode: Try real API calls
-      // Step 1: Literature search with Crow
-      console.log('🔍 Step 1: Literature search with Crow...');
-      const literatureResults = await this.searchLiterature(query.question, {
-        maxResults: query.maxResults || 100,
-        dateRange: query.dateRange,
-        fields: query.fields
+      // 🌐 REAL API CALLS: Make parallel requests to all agents
+      console.log('🌐 Using real FutureHouse API...');
+      
+      // Step 1: Search literature with Crow agent
+      const literature = await this.searchLiterature(query.question, {
+        maxResults: query.maxResults || 50,
+        includeAbstracts: true,
+        dateRange: query.dateRange
       });
 
-      console.log('📚 Literature search completed:', {
-        sourcesFound: literatureResults.sources?.length || 0,
-        hasValidSources: Array.isArray(literatureResults.sources)
-      });
+      // Step 2: Use literature results for other agents
+      const [synthesis, citations, gaps] = await Promise.all([
+        this.synthesizeResearch(literature.sources, query.question, {
+          synthesisType: query.synthesisType || 'comprehensive',
+          citationStyle: query.citationStyle || 'apa'
+        }),
+        this.formatCitations(literature.sources, query.citationStyle || 'apa'),
+        this.analyzeGaps(query.researchArea || query.question, literature.sources, {
+          analysisDepth: query.analysisDepth || 'detailed'
+        })
+      ]);
 
-      // Step 2: Synthesis with Falcon
-      console.log('🦅 Step 2: Research synthesis with Falcon...');
-      const synthesis = await this.synthesizeResearch(
-        literatureResults.sources,
-        query.question,
-        {
-          synthesisType: query.synthesisType,
-          citationStyle: query.citationStyle,
-          includeGaps: true
-        }
-      );
-
-      // Step 3: Citation formatting with Owl
-      console.log('🦉 Step 3: Citation formatting with Owl...');
-      const formattedCitations = await this.formatCitations(
-        literatureResults.sources,
-        query.citationStyle || 'apa'
-      );
-
-      // Step 4: Gap analysis with Phoenix
-      console.log('🔥 Step 4: Gap analysis with Phoenix...');
-      const gapAnalysis = await this.analyzeGaps(
-        query.researchArea || query.question,
-        literatureResults.sources,
-        {
-          analysisDepth: 'detailed',
-          suggestMethodologies: true
-        }
-      );
-
-      const result = {
-        queryId,
-        status: 'completed',
-        results: {
-          literature: literatureResults,
-          synthesis: synthesis,
-          citations: formattedCitations,
-          gaps: gapAnalysis
-        },
-        metadata: {
-          processed_at: new Date().toISOString(),
-          agents_used: ['crow', 'falcon', 'owl', 'phoenix'],
-          total_sources: literatureResults.sources?.length || 0
-        }
-      };
-
-      console.log('✅ Multi-agent research query completed successfully:', {
-        queryId,
-        totalSources: result.metadata.total_sources,
-        hasLiterature: !!result.results.literature,
-        hasCitations: !!result.results.citations
-      });
-
-      return result;
-    } catch (error) {
-      console.error('❌ Multi-agent research query failed:', error);
-
-      // 🚧 FALLBACK: Use mock data when API fails
-      console.log('🚧 Falling back to mock data due to API failure');
-
-      const mockLiterature = this.getMockLiteratureResults(query.question);
-      const mockSynthesis = this.getMockSynthesis(query.question);
-      const mockCitations = this.getMockCitations(mockLiterature.sources);
-      const mockGaps = this.getMockGapAnalysis(query.researchArea || query.question);
+      // Generate pre-formatted citations for immediate use
+      const formattedCitations = literature.sources.map(source => ({
+        text: `${source.authors?.join(', ') || 'Unknown Authors'} (${source.year || new Date().getFullYear()}). ${source.title || 'Untitled'}. ${source.journal || 'Unknown Journal'}.${source.doi ? ` https://doi.org/${source.doi}` : ''}`,
+        style: 'apa',
+        source: source
+      }));
 
       return {
         queryId,
         status: 'completed',
-        results: {
-          literature: mockLiterature,
-          synthesis: mockSynthesis,
-          citations: mockCitations,
-          gaps: mockGaps
-        },
+        results: { literature, synthesis, citations, gaps },
+        // Add pre-formatted citations for immediate use
+        formattedCitations: formattedCitations,
         metadata: {
           processed_at: new Date().toISOString(),
           agents_used: ['crow', 'falcon', 'owl', 'phoenix'],
-          total_sources: mockLiterature.sources?.length || 0,
-          fallback_mode: true,
-          original_error: error.message
+          total_sources: literature.sources?.length || 0,
+          processing_time_ms: Date.now() - (options.startTime || Date.now()),
+          cached: false
+        }
+      };
+    } catch (error) {
+      console.error('❌ Research query processing failed:', error);
+      return {
+        queryId,
+        status: 'failed',
+        error: error.message,
+        metadata: {
+          processed_at: new Date().toISOString(),
+          error_details: error.stack,
+          cached: false
         }
       };
     }

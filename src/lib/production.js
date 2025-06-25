@@ -67,6 +67,9 @@ export const productionConfig = {
     productionConfig.handleIframeErrors();
 
     if (productionConfig.isProduction()) {
+      // Initialize error tracking first (before we disable console logs)
+      productionConfig.initErrorTracking();
+      
       // Disable console logs in production (except errors)
       if (!import.meta.env.DEV) {
         console.log = () => {};
@@ -130,11 +133,11 @@ export const productionConfig = {
     return true;
   },
 
-  // Safe error reporting
+  // Enhanced error reporting and tracking
   reportError: (error, context = {}) => {
     if (productionConfig.isProduction()) {
       // In production, only log critical errors
-      if (error.name === 'ChunkLoadError' || 
+      if (error.name === 'ChunkLoadError' ||
           error.message?.includes('Loading chunk') ||
           error.message?.includes('cross-origin')) {
         console.debug('Non-critical error suppressed:', error.message);
@@ -144,10 +147,71 @@ export const productionConfig = {
     
     console.error('Application error:', error, context);
     
-    // Here you could integrate with error reporting services like Sentry
-    // if (window.Sentry) {
-    //   window.Sentry.captureException(error, { extra: context });
-    // }
+    // Enhanced error tracking for production
+    if (productionConfig.isProduction()) {
+      try {
+        // Capture stack trace
+        const stackTrace = error.stack || new Error().stack;
+        
+        // Prepare error data
+        const errorData = {
+          message: error.message,
+          name: error.name,
+          stack: stackTrace,
+          context: context,
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent
+        };
+        
+        // Log structured error info
+        console.error('Tracked error data:', JSON.stringify(errorData));
+        
+        // Here you would send to an error tracking service like Sentry
+        // if (window.Sentry) {
+        //   window.Sentry.captureException(error, {
+        //     extra: { ...context, ...errorData }
+        //   });
+        // }
+        
+        // Or send to your own backend error tracking endpoint
+        // fetch('/api/error-tracking', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(errorData)
+        // }).catch(e => console.error('Failed to send error report:', e));
+      } catch (trackingError) {
+        console.error('Error in error tracking:', trackingError);
+      }
+    }
+  },
+  
+  // Initialize error tracking
+  initErrorTracking: () => {
+    if (productionConfig.isProduction()) {
+      console.log('🔍 Initializing production error tracking');
+      
+      // Global error event listener
+      window.addEventListener('error', (event) => {
+        productionConfig.reportError(event.error || new Error(event.message), {
+          errorEventType: 'global',
+          lineNumber: event.lineno,
+          columnNumber: event.colno,
+          filename: event.filename
+        });
+        
+        // Don't prevent default error handling
+        return false;
+      });
+      
+      // Unhandled promise rejection tracking
+      window.addEventListener('unhandledrejection', (event) => {
+        productionConfig.reportError(event.reason || new Error('Unhandled Promise rejection'), {
+          errorEventType: 'unhandledRejection',
+          promise: event.promise
+        });
+      });
+    }
   }
 };
 
