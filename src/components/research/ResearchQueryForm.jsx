@@ -29,30 +29,22 @@ const ResearchQueryForm = ({
   const [researchDepth, setResearchDepth] = useState('standard');
   const [citationStyle, setCitationStyle] = useState('apa');
 
-  // Fix input interaction issues - more aggressive approach
+  // Fix input interaction issues
+  // TODO: Consider refactoring this approach to find the root cause instead of
+  // aggressive fixes. Possible issues to investigate:
+  // - CSS rules with pointer-events: none
+  // - JavaScript libraries capturing events
+  // - Overlays with high z-index
   useEffect(() => {
     console.log('🔄 ResearchQueryForm mounted, fixing inputs');
-    // Initial fix with delay to ensure DOM is ready
+    // Initial fix to ensure DOM is ready
     const timer = setTimeout(() => {
       fixInputInteraction();
     }, 100);
     
-    // Additional fix after a longer delay to catch any late-rendered elements
-    const secondTimer = setTimeout(() => {
-      console.log('🔄 Running secondary input fix');
-      fixInputInteraction();
-    }, 500);
-    
-    // Set up interval to periodically check inputs
-    const intervalTimer = setInterval(() => {
-      fixInputInteraction();
-    }, 2000);
-    
     return () => {
       clearTimeout(timer);
-      clearTimeout(secondTimer);
-      clearInterval(intervalTimer);
-      console.log('🔄 ResearchQueryForm unmounted, cleared all timers');
+      console.log('🔄 ResearchQueryForm unmounted, cleared timer');
     };
   }, []);
 
@@ -120,10 +112,12 @@ const ResearchQueryForm = ({
     console.log('✅ Form validation passed, preparing data');
     
     try {
+      // Create the query data object with all necessary fields
       const queryData = {
         title: title.trim(),
         query_text: queryText.trim(),
         selected_agents: selectedAgents,
+        research_area: '', // This can be empty as it's optional
         research_depth: researchDepth,
         citation_style: citationStyle,
         timestamp: new Date().toISOString()
@@ -131,24 +125,17 @@ const ResearchQueryForm = ({
 
       console.log('📤 Submitting query data:', queryData);
       
-      // Force a delay to ensure form state is properly captured
-      setTimeout(async () => {
-        try {
-          await onSubmit(queryData);
-          console.log('✅ Form submission successful');
-          
-          // Reset form after successful submission
-          setTitle('');
-          setQueryText('');
-          console.log('🔄 Form reset complete');
-        } catch (error) {
-          console.error('❌ Form submission error during delayed execution:', error);
-          alert(`Submission error: ${error.message || 'Unknown error'}`);
-        }
-      }, 100);
+      // Submit directly without setTimeout to avoid state issues
+      await onSubmit(queryData);
+      console.log('✅ Form submission successful');
+      
+      // Reset form after successful submission
+      setTitle('');
+      setQueryText('');
+      console.log('🔄 Form reset complete');
     } catch (error) {
       console.error('❌ Form submission error:', error);
-      alert(`Error preparing submission: ${error.message || 'Unknown error'}`);
+      alert(`Error submitting research query: ${error.message || 'Unknown error'}`);
     }
   };
 

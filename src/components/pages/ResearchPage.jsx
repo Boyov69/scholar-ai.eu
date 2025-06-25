@@ -141,8 +141,6 @@ const ResearchPage = () => {
   const [loading, setLoading] = useState(false); // For form submission
   const [loadingQueries, setLoadingQueries] = useState(false); // For loading queries
   const [error, setError] = useState(null);
-  const [pendingQuery, setPendingQuery] = useState(null); // Track pending query for processing
-  
   // New query form state
   const [queryForm, setQueryForm] = useState({
     question: '',
@@ -172,40 +170,6 @@ const ResearchPage = () => {
     }
   }, [isAuthenticated, user, navigate]);
   
-  // Process pending query when pendingQuery is set
-  useEffect(() => {
-    const processPendingQuery = async () => {
-      if (pendingQuery) {
-        console.log('🚀 Processing pending query:', pendingQuery);
-        
-        // First, update form state
-        setQueryForm({
-          question: pendingQuery.query_text,
-          researchArea: pendingQuery.research_area || '',
-          maxResults: 50,
-          dateRange: '',
-          citationStyle: pendingQuery.citation_style || 'apa',
-          synthesisType: 'comprehensive'
-        });
-        
-        // Immediately set loading state and clear pending query
-        setLoading(true);
-        const currentQuery = pendingQuery;
-        setPendingQuery(null);
-        
-        // Verify loading state is set before continuing
-        console.log('⚠️ Setting loading state to TRUE');
-        
-        // Submit after state updates are processed
-        setTimeout(() => {
-          console.log('⚠️ Loading state check before submitQuery:', loading);
-          submitQuery();
-        }, 100);
-      }
-    };
-    
-    processPendingQuery();
-  }, [pendingQuery, loading]);
 
   const loadQueries = async () => {
     if (!user?.id) return;
@@ -233,7 +197,6 @@ const ResearchPage = () => {
     setProcessingQuery(null);
     setShowRealtimeReasoning(false); // Reset reasoning display
     setCurrentReasoningStep(null);
-    setPendingQuery(null); // Reset pending query
     setQueryForm({
       question: '',
       researchArea: '',
@@ -251,7 +214,7 @@ const ResearchPage = () => {
     console.log('🧠 Reasoning update:', step);
   };
 
-  // Handler for new ResearchQueryForm - now uses pendingQuery pattern
+  // Direct handler for new ResearchQueryForm - simplified approach
   const handleNewQuerySubmit = (queryData) => {
     console.log('=== SUBMIT DEBUG ===');
     console.log('1. Form data:', queryData);
@@ -273,27 +236,25 @@ const ResearchPage = () => {
     
     try {
       // Forcibly update the loading state first for immediate UI feedback
-      // This acts as a safeguard against double-submission
       console.log('⚠️ Force loading state TRUE in handleNewQuerySubmit');
       setLoading(true);
+      
+      // Update form state for consistency with other parts of the component
+      setQueryForm({
+        question: queryData.query_text,
+        researchArea: queryData.research_area || '',
+        maxResults: 50,
+        dateRange: '',
+        citationStyle: queryData.citation_style || 'apa',
+        synthesisType: 'comprehensive',
+        agentType: queryData.selected_agents?.[0] || 'crow'
+      });
       
       // Enhanced logging for debugging
       console.log('📥 Received query data:', JSON.stringify(queryData, null, 2));
       
-      // Store query for processing by useEffect
-      setPendingQuery({
-        ...queryData,
-        _processingTimestamp: Date.now() // Add timestamp for tracking
-      });
-      
-      // Check state after update and log extended debug info
-      setTimeout(() => {
-        console.log('📊 DEBUG STATE CHECK:');
-        console.log('- Loading state:', loading);
-        console.log('- Pending query:', pendingQuery ? 'present' : 'absent');
-        console.log('- Processing query:', processingQuery ? 'present' : 'absent');
-        console.log('- Form state:', queryForm);
-      }, 100);
+      // Directly submit the query data without waiting for state updates
+      submitQuery(queryData);
       
     } catch (error) {
       console.error('❌ Error in handleNewQuerySubmit:', error);
@@ -302,8 +263,11 @@ const ResearchPage = () => {
     }
   };
 
-  const validateQuery = () => {
-    if (!queryForm.question.trim()) {
+  const validateQuery = (questionText) => {
+    // Use the provided questionText parameter or fall back to queryForm.question
+    const question = questionText || queryForm.question;
+    
+    if (!question.trim()) {
       setError('Please enter a research question');
       return false;
     }
@@ -316,19 +280,25 @@ const ResearchPage = () => {
     return true;
   };
 
-  const submitQuery = async () => {
+  const submitQuery = async (submittedQueryData = null) => {
     console.log('⚠️ submitQuery STARTED - loading state:', loading);
-    console.log('⚠️ Current form data:', queryForm);
     
-    // Double-check that we still have a form question before proceeding
-    if (!queryForm.question || queryForm.question.trim() === '') {
+    // Use submitted data if available, otherwise fall back to form state
+    const inputData = submittedQueryData || queryForm;
+    console.log('⚠️ Using input data:', inputData);
+    
+    // Always extract the query_text from the submitted data to ensure we're using the latest value
+    const questionText = submittedQueryData?.query_text || queryForm.question;
+    
+    // Double-check that we have a question before proceeding
+    if (!questionText || questionText.trim() === '') {
       console.error('❌ Form question is empty in submitQuery!');
       alert('Research question is required. Please try again.');
       setLoading(false);
       return;
     }
     
-    if (!validateQuery()) {
+    if (!validateQuery(questionText)) {
       console.log('⚠️ Query validation failed - resetting loading state');
       setLoading(false);
       return;
@@ -344,37 +314,32 @@ const ResearchPage = () => {
       setError(null);
       setProgress(0);
 
-      // Validate query data
-      if (!queryForm.question || queryForm.question.trim().length === 0) {
-        throw new Error('Research question is required');
-      }
-
       if (!user?.id) {
         throw new Error('User authentication required');
       }
 
       // Create query record in database
-      const cleanQuestion = queryForm.question.trim();
+      const cleanQuestion = questionText.trim();
       const queryData = {
         user_id: user.id,
         query: cleanQuestion, // Required field
-        agent_type: queryForm.agentType || 'crow', // Dynamic agent type from form, fallback to crow
-        title: cleanQuestion.substring(0, 100),
+        agent_type: submittedQueryData?.selected_agents?.[0] || queryForm.agentType || 'crow',
+        title: submittedQueryData?.title || cleanQuestion.substring(0, 100),
         question: cleanQuestion,
-        research_area: queryForm.researchArea?.trim() || null,
+        research_area: submittedQueryData?.research_area || queryForm.researchArea?.trim() || null,
         status: 'pending',
         max_results: queryForm.maxResults,
         date_range: queryForm.dateRange || null,
-        citation_style: queryForm.citationStyle,
+        citation_style: submittedQueryData?.citation_style || queryForm.citationStyle,
         synthesis_type: queryForm.synthesisType,
-        agents_used: ['crow', 'falcon', 'owl', 'phoenix'],
+        agents_used: submittedQueryData?.selected_agents || ['crow', 'falcon', 'owl', 'phoenix'],
         metadata: {
           submitted_at: new Date().toISOString(),
           user_id: user.id,
           form_data: {
             maxResults: queryForm.maxResults,
             dateRange: queryForm.dateRange,
-            citationStyle: queryForm.citationStyle,
+            citationStyle: submittedQueryData?.citation_style || queryForm.citationStyle,
             synthesisType: queryForm.synthesisType
           }
         }
@@ -425,11 +390,11 @@ const ResearchPage = () => {
       console.log('🚀 Current loading state before API call:', loading);
 
       // Process query with AI agents
-      const query = researchUtils.createQuery(queryForm.question, {
-        researchArea: queryForm.researchArea,
+      const query = researchUtils.createQuery(cleanQuestion, {
+        researchArea: queryData.research_area || queryForm.researchArea,
         maxResults: queryForm.maxResults,
         dateRange: queryForm.dateRange,
-        citationStyle: queryForm.citationStyle,
+        citationStyle: queryData.citation_style || queryForm.citationStyle,
         synthesisType: queryForm.synthesisType,
         userId: user.id
       });
