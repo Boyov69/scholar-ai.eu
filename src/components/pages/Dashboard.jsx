@@ -128,6 +128,7 @@ const Dashboard = () => {
       date.setDate(date.getDate() - i);
       
       const dayQueries = queries.filter(q => {
+        if (!q.created_at) return false;
         const queryDate = new Date(q.created_at);
         return queryDate.toDateString() === date.toDateString();
       });
@@ -492,12 +493,12 @@ const Dashboard = () => {
                           <div className="flex-1">
                             <h4 className="font-medium mb-1">{query.title}</h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              {query.question.substring(0, 100)}...
+                              {(query.question || query.query_text || query.title || 'No description available').substring(0, 100)}...
                             </p>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {new Date(query.created_at).toLocaleDateString()}
+                                {query.created_at ? new Date(query.created_at).toLocaleDateString() : 'Unknown date'}
                               </div>
                               {query.metadata?.total_sources && (
                                 <div className="flex items-center gap-1">

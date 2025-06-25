@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { toast } from 'sonner';
@@ -43,49 +43,61 @@ const SettingsPage = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Memoized fallback data to prevent infinite re-renders
-  const fallbackUser = useMemo(() => user || {
-    email: 'demo@scholarai.eu',
-    id: 'demo-user-123',
-    created_at: new Date().toISOString()
-  }, [user]);
+  const fallbackUser = useMemo(() => {
+    if (user) return user;
+    return {
+      email: 'demo@scholarai.eu',
+      id: 'demo-user-123',
+      created_at: new Date().toISOString()
+    };
+  }, [user?.id, user?.email]); // Only depend on stable properties
 
-  const fallbackProfile = useMemo(() => profile || {
-    display_name: 'Demo User',
-    institution: 'Scholar AI University',
-    research_field: 'Computer Science',
-    role: 'student'
-  }, [profile]);
+  const fallbackProfile = useMemo(() => {
+    if (profile) return profile;
+    return {
+      display_name: 'Demo User',
+      institution: 'Scholar AI University',
+      research_field: 'Computer Science',
+      role: 'student'
+    };
+  }, [profile?.display_name, profile?.institution, profile?.research_field]); // Only depend on used properties
 
-  const fallbackSubscription = useMemo(() => subscription || {
-    tier: 'premium',
-    status: 'active',
-    customerId: 'cus_demo123',
-    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  }, [subscription]);
+  const fallbackSubscription = useMemo(() => {
+    if (subscription) return subscription;
+    return {
+      tier: 'premium',
+      status: 'active',
+      customerId: 'cus_demo123',
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+  }, [subscription?.tier, subscription?.status]); // Only depend on used properties
 
-  const [settings, setSettings] = useState({
-    // Account settings
-    displayName: fallbackProfile?.display_name || '',
-    email: fallbackUser?.email || '',
-    institution: fallbackProfile?.institution || '',
-    researchField: fallbackProfile?.research_field || '',
+  const [settings, setSettings] = useState(() => {
+    // Initialize with default values, will be updated by useEffect
+    return {
+      // Account settings (will be populated from fallback data)
+      displayName: '',
+      email: '',
+      institution: '',
+      researchField: '',
 
-    // Enhanced Research settings
-    autoSaveResearch: true,
-    enableCollaboration: true,
-    enableMultiAgent: true,
-    enableAdvancedAnalytics: true,
-    defaultModel: 'gpt-4',
-    visionModel: 'gpt-4-vision',
+      // Enhanced Research settings
+      autoSaveResearch: true,
+      enableCollaboration: true,
+      enableMultiAgent: true,
+      enableAdvancedAnalytics: true,
+      defaultModel: 'gpt-4',
+      visionModel: 'gpt-4-vision',
 
-    // Notification settings
-    emailNotifications: true,
-    researchAlerts: true,
-    weeklyDigest: true,
+      // Notification settings
+      emailNotifications: true,
+      researchAlerts: true,
+      weeklyDigest: true,
 
-    // Appearance settings
-    darkMode: false,
-    compactMode: false
+      // Appearance settings
+      darkMode: false,
+      compactMode: false
+    };
   });
 
   const llmModels = [
@@ -119,7 +131,10 @@ const SettingsPage = () => {
   const [userPaymentMethods, setUserPaymentMethods] = useState([
     { id: '1', type: 'card', last4: '4242', brand: 'visa', expiryMonth: 12, expiryYear: 2025, isDefault: true, holderName: 'John Doe' },
     { id: '2', type: 'paypal', email: 'user@example.com', isDefault: false },
-    { id: '3', type: 'card', last4: '1234', brand: 'mastercard', expiryMonth: 8, expiryYear: 2026, isDefault: false, holderName: 'John Doe' }
+    { id: '3', type: 'card', last4: '1234', brand: 'mastercard', expiryMonth: 8, expiryYear: 2026, isDefault: false, holderName: 'John Doe' },
+    { id: '4', type: 'ideal', bank: 'ing', isDefault: false },
+    { id: '5', type: 'googlepay', provider: 'Google Pay', isDefault: false },
+    { id: '6', type: 'sepa', iban: 'NL91ABNA0417164300', accountHolder: 'John Doe', isDefault: false }
   ]);
 
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -135,6 +150,10 @@ const SettingsPage = () => {
     cvv: '',
     holderName: '',
     email: '',
+    bank: '',
+    iban: '',
+    accountHolder: '',
+    provider: '',
     isDefault: false
   });
 
@@ -452,6 +471,72 @@ const SettingsPage = () => {
           }
           return [...updated, newPayPal];
         });
+
+      } else if (newPaymentMethod.type === 'ideal') {
+        if (!newPaymentMethod.bank) {
+          toast.error('Please select your bank');
+          return;
+        }
+
+        const newIdeal = {
+          id: Date.now().toString(),
+          type: 'ideal',
+          bank: newPaymentMethod.bank,
+          isDefault: newPaymentMethod.isDefault
+        };
+
+        setUserPaymentMethods(prev => {
+          let updated = [...prev];
+          if (newPaymentMethod.isDefault) {
+            updated = updated.map(method => ({ ...method, isDefault: false }));
+          }
+          return [...updated, newIdeal];
+        });
+
+      } else if (newPaymentMethod.type === 'sepa') {
+        if (!newPaymentMethod.iban || !newPaymentMethod.accountHolder) {
+          toast.error('Please fill in IBAN and account holder name');
+          return;
+        }
+
+        const newSepa = {
+          id: Date.now().toString(),
+          type: 'sepa',
+          iban: newPaymentMethod.iban,
+          accountHolder: newPaymentMethod.accountHolder,
+          isDefault: newPaymentMethod.isDefault
+        };
+
+        setUserPaymentMethods(prev => {
+          let updated = [...prev];
+          if (newPaymentMethod.isDefault) {
+            updated = updated.map(method => ({ ...method, isDefault: false }));
+          }
+          return [...updated, newSepa];
+        });
+
+      } else {
+        // For other payment methods (Google Pay, Apple Pay, Bancontact, Sofort, Patreon, Stripe)
+        const newMethod = {
+          id: Date.now().toString(),
+          type: newPaymentMethod.type,
+          isDefault: newPaymentMethod.isDefault,
+          // Add method-specific data
+          ...(newPaymentMethod.type === 'googlepay' && { provider: 'Google Pay' }),
+          ...(newPaymentMethod.type === 'applepay' && { provider: 'Apple Pay' }),
+          ...(newPaymentMethod.type === 'bancontact' && { provider: 'Bancontact' }),
+          ...(newPaymentMethod.type === 'sofort' && { provider: 'Sofort' }),
+          ...(newPaymentMethod.type === 'patreon' && { provider: 'Patreon' }),
+          ...(newPaymentMethod.type === 'stripe' && { provider: 'Stripe' })
+        };
+
+        setUserPaymentMethods(prev => {
+          let updated = [...prev];
+          if (newPaymentMethod.isDefault) {
+            updated = updated.map(method => ({ ...method, isDefault: false }));
+          }
+          return [...updated, newMethod];
+        });
       }
 
       // Reset form
@@ -463,6 +548,10 @@ const SettingsPage = () => {
         cvv: '',
         holderName: '',
         email: '',
+        bank: '',
+        iban: '',
+        accountHolder: '',
+        provider: '',
         isDefault: false
       });
 
@@ -716,65 +805,69 @@ const SettingsPage = () => {
     return tierHierarchy[userTier] >= tierHierarchy[modelTier];
   };
 
-  // Load settings from localStorage on component mount
+  // Load settings from localStorage and initialize with fallback data
+  const initializedRef = useRef(false);
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    // Load saved settings
     const savedSettings = localStorage.getItem('scholarai_settings');
+    let parsedSettings = {};
+
     if (savedSettings) {
       try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(prev => ({ ...prev, ...parsed }));
+        parsedSettings = JSON.parse(savedSettings);
       } catch (error) {
         console.error('Error loading saved settings:', error);
       }
     }
-  }, []);
 
-  // Update settings when profile changes
-  useEffect(() => {
-    if (fallbackProfile && (
-      fallbackProfile.display_name !== settings.displayName ||
-      fallbackProfile.institution !== settings.institution ||
-      fallbackProfile.research_field !== settings.researchField
-    )) {
-      setSettings(prev => ({
-        ...prev,
-        displayName: fallbackProfile.display_name || '',
-        institution: fallbackProfile.institution || '',
-        researchField: fallbackProfile.research_field || ''
-      }));
-    }
-  }, [fallbackProfile.display_name, fallbackProfile.institution, fallbackProfile.research_field]);
+    // Merge with fallback data
+    setSettings(prev => ({
+      ...prev,
+      ...parsedSettings,
+      // Always use current fallback data for account info
+      displayName: parsedSettings.displayName || fallbackProfile?.display_name || '',
+      email: fallbackUser?.email || '',
+      institution: parsedSettings.institution || fallbackProfile?.institution || '',
+      researchField: parsedSettings.researchField || fallbackProfile?.research_field || ''
+    }));
 
-  // Update email when user changes
-  useEffect(() => {
-    if (fallbackUser?.email && fallbackUser.email !== settings.email) {
-      setSettings(prev => ({ ...prev, email: fallbackUser.email }));
-    }
-  }, [fallbackUser.email]);
+    // Set loading to false after initialization
+    setTimeout(() => setInitialLoading(false), 100);
+  }, [fallbackUser?.email, fallbackProfile?.display_name, fallbackProfile?.institution, fallbackProfile?.research_field]);
 
-  // Track unsaved changes
+  // These useEffect hooks are now handled in the initialization useEffect above
+
+  // Track unsaved changes (debounced to prevent infinite loops)
+  const settingsStringRef = useRef('');
   useEffect(() => {
-    const savedSettings = localStorage.getItem('scholarai_settings');
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings);
-        const hasChanges = JSON.stringify(settings) !== JSON.stringify(parsed);
-        setHasUnsavedChanges(hasChanges);
-      } catch (error) {
+    const currentSettingsString = JSON.stringify(settings);
+
+    // Only check if settings actually changed
+    if (currentSettingsString === settingsStringRef.current) return;
+    settingsStringRef.current = currentSettingsString;
+
+    const timeoutId = setTimeout(() => {
+      const savedSettings = localStorage.getItem('scholarai_settings');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          const hasChanges = currentSettingsString !== JSON.stringify(parsed);
+          setHasUnsavedChanges(hasChanges);
+        } catch (error) {
+          setHasUnsavedChanges(true);
+        }
+      } else {
         setHasUnsavedChanges(true);
       }
-    } else {
-      setHasUnsavedChanges(true);
-    }
+    }, 300); // Debounce for 300ms
+
+    return () => clearTimeout(timeoutId);
   }, [settings]);
 
-  // Handle initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Initial loading is now handled in the settings initialization useEffect above
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -809,8 +902,8 @@ const SettingsPage = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [navigate, handleSaveSettings]);
 
-  // Show loading state while auth is loading
-  if (authLoading) {
+  // Show loading state while auth is loading (with timeout to prevent infinite loading)
+  if (authLoading && !initializedRef.current) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-blue-900 flex items-center justify-center">
         <div className="text-center">
@@ -1206,14 +1299,40 @@ const SettingsPage = () => {
                               method.brand === 'visa' ? '💳' :
                               method.brand === 'mastercard' ? '💳' :
                               method.brand === 'amex' ? '💳' : '💳'
-                            ) : '🅿️'}
+                            ) : method.type === 'paypal' ? '🅿️' :
+                              method.type === 'googlepay' ? '🔵' :
+                              method.type === 'applepay' ? '🍎' :
+                              method.type === 'ideal' ? '🇳🇱' :
+                              method.type === 'sepa' ? '🏦' :
+                              method.type === 'bancontact' ? '🇧🇪' :
+                              method.type === 'sofort' ? '🇩🇪' :
+                              method.type === 'patreon' ? '🎨' :
+                              method.type === 'stripe' ? '💫' : '💳'}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">
                                 {method.type === 'card'
                                   ? `•••• •••• •••• ${method.last4}`
-                                  : method.email
+                                  : method.type === 'paypal'
+                                    ? method.email
+                                    : method.type === 'ideal'
+                                      ? `iDEAL - ${method.bank?.replace('_', ' ').toUpperCase()}`
+                                      : method.type === 'sepa'
+                                        ? `SEPA - ${method.iban?.slice(-4)}`
+                                        : method.type === 'googlepay'
+                                          ? 'Google Pay'
+                                          : method.type === 'applepay'
+                                            ? 'Apple Pay'
+                                            : method.type === 'bancontact'
+                                              ? 'Bancontact'
+                                              : method.type === 'sofort'
+                                                ? 'Sofort'
+                                                : method.type === 'patreon'
+                                                  ? 'Patreon'
+                                                  : method.type === 'stripe'
+                                                    ? 'Stripe'
+                                                    : 'Payment Method'
                                 }
                               </span>
                               {method.isDefault && (
@@ -1233,8 +1352,34 @@ const SettingsPage = () => {
                                     </>
                                   )}
                                 </>
-                              ) : (
+                              ) : method.type === 'paypal' ? (
                                 <span>PayPal Account</span>
+                              ) : method.type === 'ideal' ? (
+                                <span>Dutch Bank Transfer</span>
+                              ) : method.type === 'sepa' ? (
+                                <>
+                                  <span>SEPA Direct Debit</span>
+                                  {method.accountHolder && (
+                                    <>
+                                      <span>•</span>
+                                      <span>{method.accountHolder}</span>
+                                    </>
+                                  )}
+                                </>
+                              ) : method.type === 'googlepay' ? (
+                                <span>Google Pay Wallet</span>
+                              ) : method.type === 'applepay' ? (
+                                <span>Apple Pay Wallet</span>
+                              ) : method.type === 'bancontact' ? (
+                                <span>Belgian Bank Transfer</span>
+                              ) : method.type === 'sofort' ? (
+                                <span>German Bank Transfer</span>
+                              ) : method.type === 'patreon' ? (
+                                <span>Monthly Subscription</span>
+                              ) : method.type === 'stripe' ? (
+                                <span>Global Payment Processing</span>
+                              ) : (
+                                <span>Payment Method</span>
                               )}
                             </div>
                           </div>
@@ -1279,7 +1424,7 @@ const SettingsPage = () => {
               {userPaymentMethods.length > 0 && (
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Payment Statistics</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     <div className="p-3 border rounded-lg text-center">
                       <div className="text-2xl font-bold text-blue-600">{userPaymentMethods.length}</div>
                       <p className="text-xs text-muted-foreground">Total Methods</p>
@@ -1297,7 +1442,21 @@ const SettingsPage = () => {
                       <p className="text-xs text-muted-foreground">PayPal</p>
                     </div>
                     <div className="p-3 border rounded-lg text-center">
-                      <div className="text-2xl font-bold text-amber-600">1</div>
+                      <div className="text-2xl font-bold text-orange-600">
+                        {userPaymentMethods.filter(m => ['googlepay', 'applepay'].includes(m.type)).length}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Digital Wallets</p>
+                    </div>
+                    <div className="p-3 border rounded-lg text-center">
+                      <div className="text-2xl font-bold text-cyan-600">
+                        {userPaymentMethods.filter(m => ['ideal', 'sepa', 'bancontact', 'sofort'].includes(m.type)).length}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Bank Transfers</p>
+                    </div>
+                    <div className="p-3 border rounded-lg text-center">
+                      <div className="text-2xl font-bold text-amber-600">
+                        {userPaymentMethods.filter(m => m.isDefault).length}
+                      </div>
                       <p className="text-xs text-muted-foreground">Default</p>
                     </div>
                   </div>
@@ -2072,8 +2231,11 @@ const SettingsPage = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
-                      <SelectItem value="paypal">🅿️ PayPal</SelectItem>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method.id} value={method.id}>
+                          {method.icon} {method.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2210,6 +2372,171 @@ const SettingsPage = () => {
                     {newPaymentMethod.email && !validateEmail(newPaymentMethod.email) && (
                       <p className="text-xs text-red-500">Please enter a valid email address</p>
                     )}
+                  </div>
+                )}
+
+                {/* Google Pay Details */}
+                {newPaymentMethod.type === 'googlepay' && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">🔵</span>
+                        <div>
+                          <h4 className="font-medium">Google Pay</h4>
+                          <p className="text-sm text-muted-foreground">Connect your Google Pay account</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" className="w-full">
+                        <span className="mr-2">🔵</span>
+                        Connect Google Pay
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Apple Pay Details */}
+                {newPaymentMethod.type === 'applepay' && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-950/20 border border-gray-200 dark:border-gray-800 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">🍎</span>
+                        <div>
+                          <h4 className="font-medium">Apple Pay</h4>
+                          <p className="text-sm text-muted-foreground">Use Touch ID or Face ID</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" className="w-full">
+                        <span className="mr-2">🍎</span>
+                        Set up Apple Pay
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* iDEAL Details */}
+                {newPaymentMethod.type === 'ideal' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="idealBank">Select Your Bank</Label>
+                    <Select
+                      value={newPaymentMethod.bank || ''}
+                      onValueChange={(value) => setNewPaymentMethod(prev => ({ ...prev, bank: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose your Dutch bank" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="abn_amro">ABN AMRO</SelectItem>
+                        <SelectItem value="ing">ING</SelectItem>
+                        <SelectItem value="rabobank">Rabobank</SelectItem>
+                        <SelectItem value="sns_bank">SNS Bank</SelectItem>
+                        <SelectItem value="asn_bank">ASN Bank</SelectItem>
+                        <SelectItem value="bunq">bunq</SelectItem>
+                        <SelectItem value="handelsbanken">Handelsbanken</SelectItem>
+                        <SelectItem value="knab">Knab</SelectItem>
+                        <SelectItem value="moneyou">Moneyou</SelectItem>
+                        <SelectItem value="regiobank">RegioBank</SelectItem>
+                        <SelectItem value="revolut">Revolut</SelectItem>
+                        <SelectItem value="triodos_bank">Triodos Bank</SelectItem>
+                        <SelectItem value="van_lanschot">Van Lanschot</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* SEPA Direct Debit Details */}
+                {newPaymentMethod.type === 'sepa' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="iban">IBAN</Label>
+                      <Input
+                        id="iban"
+                        placeholder="NL91 ABNA 0417 1643 00"
+                        value={newPaymentMethod.iban || ''}
+                        onChange={(e) => setNewPaymentMethod(prev => ({ ...prev, iban: e.target.value.toUpperCase() }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountHolder">Account Holder Name</Label>
+                      <Input
+                        id="accountHolder"
+                        placeholder="John Doe"
+                        value={newPaymentMethod.accountHolder || ''}
+                        onChange={(e) => setNewPaymentMethod(prev => ({ ...prev, accountHolder: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Bancontact Details */}
+                {newPaymentMethod.type === 'bancontact' && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">🇧🇪</span>
+                        <div>
+                          <h4 className="font-medium">Bancontact</h4>
+                          <p className="text-sm text-muted-foreground">Belgian bank payment</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        You'll be redirected to your bank to complete the payment.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sofort Details */}
+                {newPaymentMethod.type === 'sofort' && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">🇩🇪</span>
+                        <div>
+                          <h4 className="font-medium">Sofort</h4>
+                          <p className="text-sm text-muted-foreground">German bank transfer</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Instant bank transfer from your German bank account.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Patreon Details */}
+                {newPaymentMethod.type === 'patreon' && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">🎨</span>
+                        <div>
+                          <h4 className="font-medium">Patreon</h4>
+                          <p className="text-sm text-muted-foreground">Monthly subscription support</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" className="w-full">
+                        <span className="mr-2">🎨</span>
+                        Connect Patreon Account
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stripe Details */}
+                {newPaymentMethod.type === 'stripe' && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">💫</span>
+                        <div>
+                          <h4 className="font-medium">Stripe</h4>
+                          <p className="text-sm text-muted-foreground">Global payment processing</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Secure payment processing with multiple options.
+                      </p>
+                    </div>
                   </div>
                 )}
 

@@ -177,16 +177,16 @@ const EnhancedResearchPage = () => {
     <>
       <Helmet>
         <title>Enhanced Research - Scholar AI</title>
-        <meta 
-          name="description" 
-          content="Advanced AI research with FutureHouse agents - Phoenix, Crow, Falcon, and Owl for specialized academic research tasks." 
+        <meta
+          name="description"
+          content="Advanced AI research with FutureHouse agents - Phoenix, Crow, Falcon, and Owl for specialized academic research tasks."
         />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
         {/* Background Elements */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
-        
+
         {/* Animated Background Particles */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-pulse"></div>

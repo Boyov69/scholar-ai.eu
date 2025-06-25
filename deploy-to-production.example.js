@@ -1,10 +1,23 @@
 // Script to deploy scholar-ai project to production
 import { spawn } from 'child_process';
+import path from 'path';
 
-const mcpServer = spawn('node', ['E:/User/Documents/scholar-ai/mcp-vercel/build/index.js'], {
+// Get API token from environment variable
+const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
+
+if (!VERCEL_API_TOKEN) {
+  console.error('❌ VERCEL_API_TOKEN environment variable is required');
+  console.error('Set it with: export VERCEL_API_TOKEN=your_token_here');
+  process.exit(1);
+}
+
+// Use relative path for portability
+const mcpServerPath = path.join(process.cwd(), 'mcp-vercel', 'build', 'index.js');
+
+const mcpServer = spawn('node', [mcpServerPath], {
   env: {
     ...process.env,
-    VERCEL_API_TOKEN: 'GVsf8tu8yRyXbZ9MvyOxYw6Z'
+    VERCEL_API_TOKEN
   },
   stdio: ['pipe', 'pipe', 'pipe']
 });
