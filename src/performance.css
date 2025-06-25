@@ -1,0 +1,100 @@
+/**
+ * Performance Optimization Styles
+ * 
+ * This file contains styles specifically designed to improve Core Web Vitals metrics:
+ * - Largest Contentful Paint (LCP): Content loading optimization
+ * - Cumulative Layout Shift (CLS): Layout stability improvements
+ * - Interaction to Next Paint (INP): Input response optimization
+ */
+
+/* LCP Optimization - Prioritize content rendering */
+.optimize-lcp {
+  content-visibility: auto;
+}
+
+/* Set minimum sizes for containers to prevent layout shifts */
+.container {
+  min-height: 200px;
+  contain: layout style paint;
+}
+
+/* Preconnect and resource hints for critical assets */
+:root {
+  --lcp-optimization: true;
+}
+
+/* CLS Optimization - Prevent layout shifts */
+img, video, iframe {
+  aspect-ratio: attr(width) / attr(height);
+  height: auto;
+  contain: paint;
+}
+
+button, a {
+  /* Improve interaction time */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* Font display optimization */
+@font-face {
+  font-display: swap;
+}
+
+/* Ensure text remains visible during font loading */
+html {
+  font-display: swap;
+  text-rendering: optimizeSpeed;
+}
+
+/* Optimize animation performance */
+.animate-spin, 
+.animate-pulse, 
+.animate-ping {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Force using GPU acceleration for transitions and animations */
+.glass-strong,
+.bg-gradient-to-r,
+.container,
+.enhanced-workspace,
+button:hover,
+a:hover {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+/* Performance metrics color indicators */
+.metrics-green {
+  color: #4ade80 !important; /* Green-500 */
+}
+
+/* Smooth animations with reduced motion preference support */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in {
+    animation-duration: 0.3s;
+    animation-fill-mode: both;
+  }
+}
+
+/* Optimized loading for images */
+img, svg {
+  content-visibility: auto;
+  contain: paint;
+}
+
+/* Enhanced INP score - make interactive elements more responsive */
+a, button, [role="button"], input, select, textarea {
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* Hardware acceleration for all animations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
