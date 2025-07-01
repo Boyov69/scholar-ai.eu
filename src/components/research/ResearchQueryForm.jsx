@@ -131,21 +131,14 @@ const ResearchQueryForm = ({
 
       console.log('📤 Submitting query data:', queryData);
       
-      // Force a delay to ensure form state is properly captured
-      setTimeout(async () => {
-        try {
-          await onSubmit(queryData);
-          console.log('✅ Form submission successful');
-          
-          // Reset form after successful submission
-          setTitle('');
-          setQueryText('');
-          console.log('🔄 Form reset complete');
-        } catch (error) {
-          console.error('❌ Form submission error during delayed execution:', error);
-          alert(`Submission error: ${error.message || 'Unknown error'}`);
-        }
-      }, 100);
+      // Submit immediately with fresh form state
+      await onSubmit(queryData);
+      console.log('✅ Form submission successful');
+      
+      // Reset form after successful submission
+      setTitle('');
+      setQueryText('');
+      console.log('🔄 Form reset complete');
     } catch (error) {
       console.error('❌ Form submission error:', error);
       alert(`Error preparing submission: ${error.message || 'Unknown error'}`);
